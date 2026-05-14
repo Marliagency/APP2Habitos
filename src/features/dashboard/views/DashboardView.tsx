@@ -8,6 +8,7 @@ import { useWorkoutsStore }  from '../../workouts/store/workoutsStore';
 import { useJournalStore }   from '../../journal/store/journalStore';
 import { useNutritionStore } from '../../nutrition/store/nutritionStore';
 import { useTasksStore }     from '../../tasks/store/tasksStore';
+import { useGoalsStore }     from '../../goals/store/goalsStore';
 import { useDashboardData }  from '../hooks/useDashboardData';
 import { KPIBand }           from '../components/KPIBand';
 import { LifeScoreSection }  from '../components/LifeScoreSection';
@@ -106,6 +107,70 @@ function CalorieBar({ calories, target }: { calories: number; target: number }) 
   );
 }
 
+// ─── Weekly summary card ──────────────────────────────────────────────────────
+function WeeklySummaryCard({
+  weekHabitPct,
+  workoutsThisWeek,
+  workoutTarget,
+  avgCalories7d,
+  calorieTarget,
+  avgMood7d,
+}: {
+  weekHabitPct: number;
+  workoutsThisWeek: number;
+  workoutTarget: number | null;
+  avgCalories7d: number | null;
+  calorieTarget: number | null;
+  avgMood7d: number | null;
+}) {
+  const habitColor = weekHabitPct >= 70 ? 'var(--success)' : weekHabitPct >= 40 ? 'var(--warning)' : 'var(--danger)';
+  const calOk = avgCalories7d !== null && calorieTarget !== null && Math.abs(avgCalories7d - calorieTarget) / calorieTarget < 0.15;
+  const moodColor = avgMood7d === null ? 'var(--text-tertiary)' : avgMood7d >= 4 ? 'var(--success)' : avgMood7d >= 3 ? 'var(--warning)' : 'var(--danger)';
+
+  const items = [
+    {
+      label: 'Hábitos',
+      value: `${weekHabitPct}%`,
+      sub: 'cumplimiento',
+      color: habitColor,
+    },
+    {
+      label: 'Entrenos',
+      value: workoutTarget ? `${workoutsThisWeek}/${workoutTarget}` : `${workoutsThisWeek}`,
+      sub: 'esta semana',
+      color: (workoutTarget ? workoutsThisWeek >= workoutTarget : workoutsThisWeek > 0)
+        ? 'var(--success)' : 'var(--warning)',
+    },
+    {
+      label: 'Calorías',
+      value: avgCalories7d !== null ? `${avgCalories7d}` : '–',
+      sub: calorieTarget ? `obj. ${calorieTarget}` : 'media 7d',
+      color: calOk ? 'var(--success)' : avgCalories7d !== null ? 'var(--warning)' : 'var(--text-tertiary)',
+    },
+    {
+      label: 'Ánimo',
+      value: avgMood7d !== null ? `${avgMood7d.toFixed(1)}/5` : '–',
+      sub: 'media 7d',
+      color: moodColor,
+    },
+  ];
+
+  return (
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
+      <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-3">Esta semana</p>
+      <div className="grid grid-cols-4 gap-2 text-center">
+        {items.map(({ label, value, sub, color }) => (
+          <div key={label}>
+            <p className="text-base font-bold leading-none" style={{ color }}>{value}</p>
+            <p className="text-[10px] font-medium text-[var(--text-primary)] mt-1">{label}</p>
+            <p className="text-[9px] text-[var(--text-tertiary)]">{sub}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardView() {
   const navigate = useNavigate();
 
@@ -114,6 +179,7 @@ export default function DashboardView() {
   const journalStore   = useJournalStore();
   const nutritionStore = useNutritionStore();
   const tasksStore     = useTasksStore();
+  const { goal }       = useGoalsStore();
 
   useEffect(() => {
     if (!habitsStore.loaded)    habitsStore.loadFromStorage();
@@ -213,6 +279,16 @@ export default function DashboardView() {
           accent="var(--accent)"
         />
       </div>
+
+      {/* Weekly summary */}
+      <WeeklySummaryCard
+        weekHabitPct={data.weekHabitPct}
+        workoutsThisWeek={workoutsThisWeek}
+        workoutTarget={goal?.derived.workoutDaysPerWeek ?? null}
+        avgCalories7d={data.avgCalories7d}
+        calorieTarget={data.calorieTarget ?? goal?.derived.calorieTarget ?? null}
+        avgMood7d={data.avgMood7d}
+      />
 
       {/* Life Score section */}
       <LifeScoreSection

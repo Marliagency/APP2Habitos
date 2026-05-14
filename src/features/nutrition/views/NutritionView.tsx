@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Camera, Mic, ScanLine, Plus, Target, Scale, ChevronLeft, ChevronRight, ChefHat } from 'lucide-react';
+import { Camera, Mic, ScanLine, Plus, Target, Scale, ChevronLeft, ChevronRight, ChefHat, PenLine } from 'lucide-react';
 import { useNutritionStore } from '../store/nutritionStore';
 import { DailyRings } from '../components/DailyRings';
 import { MealCard } from '../components/MealCard';
@@ -10,13 +10,14 @@ import { VoiceInput } from '../components/VoiceInput';
 import { BarcodeScanner } from '../components/BarcodeScanner';
 import { NutritionTargetsWizard } from '../components/NutritionTargetsWizard';
 import { MealTemplateSheet } from '../components/MealTemplateSheet';
+import { ManualFoodForm } from '../components/ManualFoodForm';
 import { Button, Modal, Skeleton } from '../../../shared/components/ui';
 import { MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
 
 const MEAL_TYPES: Meal['type'][] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
-type AddMode = 'photo' | 'voice' | 'barcode' | 'template' | null;
+type AddMode = 'photo' | 'voice' | 'barcode' | 'template' | 'manual' | null;
 
 export default function NutritionView() {
   const store = useNutritionStore();
@@ -126,6 +127,7 @@ export default function NutritionView() {
           { mode: 'voice' as AddMode,    icon: Mic,      label: 'Voz' },
           { mode: 'barcode' as AddMode,  icon: ScanLine, label: 'Código' },
           { mode: 'template' as AddMode, icon: ChefHat,  label: 'Plantilla' },
+          { mode: 'manual' as AddMode,   icon: PenLine,  label: 'Manual' },
         ]).map(({ mode, icon: Icon, label }) => (
           <button
             key={mode}
@@ -136,24 +138,6 @@ export default function NutritionView() {
             <span className="text-[10px] text-[var(--text-tertiary)]">{label}</span>
           </button>
         ))}
-        <button
-          onClick={async () => {
-            let meal = meals.find(m => m.type === 'snack');
-            if (!meal) meal = await store.addMeal(date, 'snack');
-            await store.addEntryToMeal(meal.id, {
-              foodItemId: crypto.randomUUID(),
-              name: 'Alimento',
-              quantity: 1,
-              serving: '1 porción',
-              macros: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-              source: 'manual',
-            });
-          }}
-          className="flex-1 flex flex-col items-center gap-1.5 py-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] hover:border-[var(--nutrition-color)] hover:bg-[var(--bg-hover)] transition-all"
-        >
-          <Plus size={18} className="text-[var(--text-secondary)]" />
-          <span className="text-[10px] text-[var(--text-tertiary)]">Manual</span>
-        </button>
       </div>
 
       {/* Meal cards */}
@@ -208,6 +192,9 @@ export default function NutritionView() {
       </Modal>
       <Modal open={addMode === 'barcode'} onClose={() => setAddMode(null)} title="Código de barras">
         <BarcodeScanner mealType={activeMealType} onDone={() => setAddMode(null)} />
+      </Modal>
+      <Modal open={addMode === 'manual'} onClose={() => setAddMode(null)} title="Añadir alimento manual">
+        <ManualFoodForm mealType={activeMealType} date={date} onDone={() => setAddMode(null)} />
       </Modal>
       <Modal open={showTargets} onClose={() => setShowTargets(false)} title="Objetivos nutricionales">
         <NutritionTargetsWizard onDone={() => setShowTargets(false)} />

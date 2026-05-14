@@ -2,9 +2,15 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Send, User, Settings, Trash2, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { Button, Spinner } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/ui';
+import { useGoalsStore } from '../../goals/store/goalsStore';
+import { useHabitsStore } from '../../habits/store/habitsStore';
+import { useNutritionStore } from '../../nutrition/store/nutritionStore';
+import { useWorkoutsStore } from '../../workouts/store/workoutsStore';
+import { useJournalStore } from '../../journal/store/journalStore';
+import { INTENT_LABELS } from '../../goals/types';
 
 const AI_CLAUDE_KEY = 'ai_claude_key';
 const AI_OPENAI_KEY = 'ai_openai_key';
@@ -21,10 +27,37 @@ interface Message {
   error?:    boolean;
 }
 
-const SYSTEM_PROMPT = `Eres un asistente personal de productividad y bienestar integrado en APP2Habitos.
+const BASE_PROMPT = `Eres un asistente personal de productividad y bienestar integrado en APP2Habitos.
 Ayudas al usuario con sus hábitos, entrenamiento, nutrición, diario personal y tareas.
 Eres conciso, empático y orientado a la acción. Respondes en español.
-Cuando el usuario mencione hábitos, ejercicio, comida o emociones, ofrece consejos personalizados y concretos.`;
+Cuando el usuario mencione hábitos, ejercicio, comida o emociones, ofrece consejos personalizados y concretos basados en los datos del usuario a continuación.`;
+
+function buildSystemPrompt(ctx: {
+  goalLabel?: string;
+  goalSummary?: string;
+  calorieTarget?: number;
+  proteinTarget?: number;
+  habitNames: string[];
+  avgCalories7d: number | null;
+  workoutsThisWeek: number;
+  avgMood7d: number | null;
+  todayCalories: number | null;
+}): string {
+  const lines: string[] = [BASE_PROMPT, '', '## Datos del usuario (hoy)'];
+  const today = format(new Date(), 'yyyy-MM-dd');
+  lines.push(`Fecha: ${today}`);
+
+  if (ctx.goalLabel) lines.push(`Objetivo principal: ${ctx.goalLabel}${ctx.goalSummary ? ` — ${ctx.goalSummary}` : ''}`);
+  if (ctx.calorieTarget) lines.push(`Objetivo de calorías: ${ctx.calorieTarget} kcal/día`);
+  if (ctx.proteinTarget) lines.push(`Objetivo de proteínas: ${ctx.proteinTarget}g/día`);
+  if (ctx.habitNames.length) lines.push(`Hábitos activos: ${ctx.habitNames.slice(0, 6).join(', ')}`);
+  if (ctx.avgCalories7d !== null) lines.push(`Calorías media últimos 7 días: ${Math.round(ctx.avgCalories7d)} kcal`);
+  if (ctx.todayCalories !== null) lines.push(`Calorías registradas hoy: ${ctx.todayCalories} kcal`);
+  if (ctx.workoutsThisWeek >= 0) lines.push(`Entrenamientos esta semana: ${ctx.workoutsThisWeek}`);
+  if (ctx.avgMood7d !== null) lines.push(`Estado de ánimo medio (7d): ${ctx.avgMood7d.toFixed(1)}/5`);
+
+  return lines.join('\n');
+}
 
 const QUICK_PROMPTS = [
   '¿Cómo puedo mejorar mi racha de hábitos?',
@@ -34,7 +67,7 @@ const QUICK_PROMPTS = [
   '¿Cómo gestionar mejor mi tiempo?',
 ];
 
-async function callClaude(messages: { role: string; content: string }[], apiKey: string): Promise<string> {
+async function callClaude(messages: { role: string; content: string }[], apiKey: string, systemPrompt: string): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -46,7 +79,7 @@ async function callClaude(messages: { role: string; content: string }[], apiKey:
     body: JSON.stringify({
       model:      'claude-haiku-4-5-20251001',
       max_tokens: 1024,
-      system:     SYSTEM_PROMPT,
+      system:     systemPrompt,
       messages:   messages.filter(m => m.role !== 'system'),
     }),
   });
@@ -58,7 +91,7 @@ async function callClaude(messages: { role: string; content: string }[], apiKey:
   return data.content[0]?.text ?? '';
 }
 
-async function callOpenAI(messages: { role: string; content: string }[], apiKey: string): Promise<string> {
+async function callOpenAI(messages: { role: string; content: string }[], apiKey: string, systemPrompt: string): Promise<string> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -69,7 +102,7 @@ async function callOpenAI(messages: { role: string; content: string }[], apiKey:
       model:       'gpt-4o-mini',
       max_tokens:  1024,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         ...messages.filter(m => m.role !== 'system'),
       ],
     }),
@@ -158,6 +191,13 @@ export default function AssistantView() {
   const openaiKey  = localStorage.getItem(AI_OPENAI_KEY) ?? '';
   const hasKey     = !!(claudeKey || openaiKey);
 
+  // App context for dynamic system prompt
+  const { goal }                  = useGoalsStore();
+  const { habits, getActiveHabits } = useHabitsStore();
+  const nutritionStore            = useNutritionStore();
+  const { workouts }              = useWorkoutsStore();
+  const { getAverageMood }        = useJournalStore();
+
   const preferredModel: Model = claudeKey ? 'claude' : 'openai';
   const [model,    setModel]    = useState<Model>(preferredModel);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -181,6 +221,26 @@ export default function AssistantView() {
       return;
     }
 
+    // Build live context snapshot
+    const today    = format(new Date(), 'yyyy-MM-dd');
+    const cutoff   = format(subDays(new Date(), 7), 'yyyy-MM-dd');
+    const last7    = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), i), 'yyyy-MM-dd'));
+    const calReadings = last7.map(d => nutritionStore.getTotalsForDate(d).calories).filter(c => c > 0);
+    const todayKcal   = nutritionStore.getTotalsForDate(today).calories;
+    const workoutsThisWeek = workouts.filter(w => w.date >= cutoff && w.date <= today).length;
+
+    const systemPrompt = buildSystemPrompt({
+      goalLabel:        goal ? INTENT_LABELS[goal.intent] : undefined,
+      goalSummary:      goal?.derived.weeklyGoalSummary,
+      calorieTarget:    goal?.derived.calorieTarget ?? nutritionStore.targets?.calories,
+      proteinTarget:    goal?.derived.proteinG ?? nutritionStore.targets?.protein,
+      habitNames:       getActiveHabits().map(h => h.name),
+      avgCalories7d:    calReadings.length ? calReadings.reduce((a, b) => a + b, 0) / calReadings.length : null,
+      workoutsThisWeek,
+      avgMood7d:        getAverageMood(7),
+      todayCalories:    todayKcal > 0 ? Math.round(todayKcal) : null,
+    });
+
     const userMsg: Message = {
       id:        uid(),
       role:      'user',
@@ -195,8 +255,8 @@ export default function AssistantView() {
     try {
       const history = [...messages, userMsg].map(m => ({ role: m.role as string, content: m.content }));
       const reply = model === 'claude'
-        ? await callClaude(history, activeKey)
-        : await callOpenAI(history, activeKey);
+        ? await callClaude(history, activeKey, systemPrompt)
+        : await callOpenAI(history, activeKey, systemPrompt);
 
       const assistantMsg: Message = {
         id:        uid(),
@@ -220,7 +280,7 @@ export default function AssistantView() {
       setLoading(false);
       inputRef.current?.focus();
     }
-  }, [messages, model, claudeKey, openaiKey, hasKey, loading, toast]);
+  }, [messages, model, claudeKey, openaiKey, hasKey, loading, toast, goal, habits, workouts, nutritionStore, getActiveHabits, getAverageMood]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

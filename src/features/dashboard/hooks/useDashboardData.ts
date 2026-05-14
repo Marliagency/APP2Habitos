@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { useHabitsStore }    from '../../habits/store/habitsStore';
 import { useWorkoutsStore }  from '../../workouts/store/workoutsStore';
 import { useJournalStore }   from '../../journal/store/journalStore';
@@ -102,6 +102,18 @@ export function useDashboardData() {
     return totals.calories > 0 ? Math.round(totals.calories) : null;
   }, [nutritionStore, nutritionStore.meals]);
 
+  const avgCalories7d = useMemo(() => {
+    const days = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), i), 'yyyy-MM-dd'));
+    const readings = days.map(d => nutritionStore.getTotalsForDate(d).calories).filter(c => c > 0);
+    return readings.length > 0 ? Math.round(readings.reduce((a, b) => a + b, 0) / readings.length) : null;
+  }, [nutritionStore.meals]);
+
+  const weekHabitPct = useMemo(() => {
+    if (last30Days.length === 0) return 0;
+    const week = last30Days.slice(-7);
+    return Math.round(week.reduce((s, d) => s + d.habitsScore, 0) / week.length);
+  }, [last30Days]);
+
   const calorieTarget = nutritionStore.targets?.calories ?? null;
 
   return {
@@ -128,6 +140,8 @@ export function useDashboardData() {
     avgMood7d,
     tasksPendingToday,
     caloriesToday,
+    avgCalories7d,
+    weekHabitPct,
     calorieTarget,
     journalEntries,
     tasks,
