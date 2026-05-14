@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Skeleton } from '../shared/components/ui';
 
+const DashboardView = lazy(() => import('../features/dashboard/views/DashboardView'));
 const TodayView = lazy(() => import('../features/habits/views/TodayView'));
 const HabitsView = lazy(() => import('../features/habits/views/HabitsView'));
 const WorkoutsView = lazy(() => import('../features/workouts/views/WorkoutsView'));
@@ -27,7 +28,7 @@ export function AppRoutes() {
   return (
     <Suspense fallback={<PageFallback />}>
       <Routes>
-        <Route path="/" element={<Navigate to="/today" replace />} />
+        <Route path="/" element={<DashboardView />} />
         <Route path="/today" element={<TodayView />} />
         <Route path="/habits" element={<HabitsView />} />
         <Route path="/workouts/*" element={<WorkoutsView />} />
@@ -37,7 +38,7 @@ export function AppRoutes() {
         <Route path="/assistant" element={<AssistantView />} />
         <Route path="/analytics" element={<AnalyticsView />} />
         <Route path="/settings" element={<SettingsView />} />
-        <Route path="*" element={<Navigate to="/today" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );

@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom';
+import type { LucideIcon } from 'lucide-react';
 import {
   CheckSquare, Dumbbell, Apple, BookOpen, ListTodo,
-  Bot, BarChart2, Settings, Home
+  Bot, BarChart2, Settings, Home, LayoutDashboard
 } from 'lucide-react';
 import clsx from 'clsx';
 
-const navItems = [
+const navItems: { to: string; icon: LucideIcon; label: string; color?: string; end?: boolean }[] = [
+  { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/today', icon: Home, label: 'Hoy' },
   { to: '/habits', icon: CheckSquare, label: 'Hábitos', color: 'var(--habit-color)' },
   { to: '/workouts', icon: Dumbbell, label: 'Entrenamientos', color: 'var(--workout-color)' },
@@ -14,7 +16,7 @@ const navItems = [
   { to: '/tasks', icon: ListTodo, label: 'Tareas', color: 'var(--task-color)' },
 ];
 
-const bottomItems = [
+const bottomItems: { to: string; icon: LucideIcon; label: string }[] = [
   { to: '/assistant', icon: Bot, label: 'Asistente IA' },
   { to: '/analytics', icon: BarChart2, label: 'Analytics' },
   { to: '/settings', icon: Settings, label: 'Ajustes' },
@@ -32,10 +34,11 @@ export function Sidebar() {
         </div>
       </div>
       <div className="flex-1 px-2 space-y-0.5">
-        {navItems.map(({ to, icon: Icon, label, color }) => (
+        {navItems.map(({ to, icon: Icon, label, color, end }) => (
           <NavLink
             key={to}
             to={to}
+            end={end}
             className={({ isActive }) =>
               clsx(
                 'flex items-center gap-2.5 px-3 py-2 rounded-[var(--r-md)] text-sm transition-all duration-150',
