@@ -11,7 +11,11 @@ import { BarcodeScanner } from '../components/BarcodeScanner';
 import { NutritionTargetsWizard } from '../components/NutritionTargetsWizard';
 import { MealTemplateSheet } from '../components/MealTemplateSheet';
 import { ManualFoodForm } from '../components/ManualFoodForm';
-import { Button, Modal, Skeleton } from '../../../shared/components/ui';
+import {
+  CaloriesWeekChart, CaloriesMonthChart, MacroSplitChart,
+  BodyWeightChart, MacroRatioChart,
+} from '../components/NutritionCharts';
+import { Button, Modal, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent } from '../../../shared/components/ui';
 import { MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
 
@@ -21,6 +25,7 @@ type AddMode = 'photo' | 'voice' | 'barcode' | 'template' | 'manual' | null;
 
 export default function NutritionView() {
   const store = useNutritionStore();
+  const [tab, setTab]             = useState('today');
   const [date, setDate]           = useState(format(new Date(), 'yyyy-MM-dd'));
   const [addMode, setAddMode]     = useState<AddMode>(null);
   const [activeMealType, setActiveMealType] = useState<Meal['type']>('snack');
@@ -86,102 +91,133 @@ export default function NutritionView() {
         </div>
       </div>
 
-      {/* Day navigator */}
-      <div className="flex items-center gap-2 justify-center">
-        <button
-          onClick={() => changeDay(-1)}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] transition-colors"
-        >
-          <ChevronLeft size={16} className="text-[var(--text-secondary)]" />
-        </button>
-        <span className="text-sm font-medium text-[var(--text-primary)] min-w-[160px] text-center capitalize">
-          {isToday ? 'Hoy' : format(new Date(date + 'T12:00:00'), "EEEE, d 'de' MMM", { locale: es })}
-        </span>
-        <button
-          onClick={() => changeDay(1)}
-          disabled={isToday}
-          className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] transition-colors disabled:opacity-30"
-        >
-          <ChevronRight size={16} className="text-[var(--text-secondary)]" />
-        </button>
-      </div>
+      {/* Tabs */}
+      <Tabs value={tab} onChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="today">Hoy</TabsTrigger>
+          <TabsTrigger value="week">Semana</TabsTrigger>
+          <TabsTrigger value="month">Mes</TabsTrigger>
+        </TabsList>
 
-      {/* Daily Rings or setup prompt */}
-      {targets ? (
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-          <DailyRings totals={totals} targets={targets} />
-        </div>
-      ) : (
-        <button
-          onClick={() => setShowTargets(true)}
-          className="w-full flex items-center justify-center gap-2 py-6 border-2 border-dashed border-[var(--border-default)] rounded-[var(--r-xl)] text-sm text-[var(--text-secondary)] hover:border-[var(--nutrition-color)] hover:text-[var(--nutrition-color)] transition-all"
-        >
-          <Target size={18} /> Configurar objetivos nutricionales
-        </button>
-      )}
+        {/* ── Today ────────────────────────────────────── */}
+        <TabsContent value="today">
+          <div className="mt-3 space-y-4">
+            {/* Day navigator */}
+            <div className="flex items-center gap-2 justify-center">
+              <button
+                onClick={() => changeDay(-1)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] transition-colors"
+              >
+                <ChevronLeft size={16} className="text-[var(--text-secondary)]" />
+              </button>
+              <span className="text-sm font-medium text-[var(--text-primary)] min-w-[160px] text-center capitalize">
+                {isToday ? 'Hoy' : format(new Date(date + 'T12:00:00'), "EEEE, d 'de' MMM", { locale: es })}
+              </span>
+              <button
+                onClick={() => changeDay(1)}
+                disabled={isToday}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg-hover)] transition-colors disabled:opacity-30"
+              >
+                <ChevronRight size={16} className="text-[var(--text-secondary)]" />
+              </button>
+            </div>
 
-      {/* Quick add buttons */}
-      <div className="flex gap-2">
-        {([
-          { mode: 'photo' as AddMode,    icon: Camera,   label: 'Foto' },
-          { mode: 'voice' as AddMode,    icon: Mic,      label: 'Voz' },
-          { mode: 'barcode' as AddMode,  icon: ScanLine, label: 'Código' },
-          { mode: 'template' as AddMode, icon: ChefHat,  label: 'Plantilla' },
-          { mode: 'manual' as AddMode,   icon: PenLine,  label: 'Manual' },
-        ]).map(({ mode, icon: Icon, label }) => (
-          <button
-            key={mode}
-            onClick={() => openAdd('snack', mode)}
-            className="flex-1 flex flex-col items-center gap-1.5 py-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] hover:border-[var(--nutrition-color)] hover:bg-[var(--bg-hover)] transition-all"
-          >
-            <Icon size={18} className="text-[var(--text-secondary)]" />
-            <span className="text-[10px] text-[var(--text-tertiary)]">{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Meal cards */}
-      <div className="space-y-3">
-        {MEAL_TYPES.map(mealType => {
-          const meal = meals.find(m => m.type === mealType);
-          return meal ? (
-            <MealCard
-              key={meal.id}
-              meal={meal}
-              onAddEntry={() => openAdd(mealType, 'photo')}
-            />
-          ) : isToday ? (
-            <button
-              key={mealType}
-              onClick={async () => { await store.addMeal(date, mealType); }}
-              className="w-full flex items-center gap-3 px-4 py-3 bg-[var(--bg-surface)] border border-dashed border-[var(--border-default)] rounded-[var(--r-xl)] hover:border-[var(--nutrition-color)] hover:bg-[var(--bg-hover)] transition-all"
-            >
-              <Plus size={14} className="text-[var(--text-tertiary)] shrink-0" />
-              <span className="text-sm text-[var(--text-secondary)]">{MEAL_LABELS[mealType]}</span>
-            </button>
-          ) : null;
-        })}
-      </div>
-
-      {/* Totals summary card */}
-      {totals.calories > 0 && (
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-          <p className="text-xs font-medium text-[var(--text-tertiary)] mb-3">Resumen del día</p>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            {[
-              { label: 'kcal',     value: totals.calories, color: 'var(--accent)' },
-              { label: 'Proteínas',value: `${totals.protein}g`, color: 'var(--nutrition-color)' },
-              { label: 'Carbos',   value: `${totals.carbs}g`,   color: 'var(--warning)' },
-              { label: 'Grasas',   value: `${totals.fat}g`,     color: 'var(--journal-color)' },
-            ].map(m => (
-              <div key={m.label}>
-                <p className="text-lg font-bold" style={{ color: m.color }}>{m.value}</p>
-                <p className="text-[9px] text-[var(--text-tertiary)]">{m.label}</p>
+            {/* Daily Rings or setup prompt */}
+            {targets ? (
+              <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
+                <DailyRings totals={totals} targets={targets} />
               </div>
-            ))}
+            ) : (
+              <button
+                onClick={() => setShowTargets(true)}
+                className="w-full flex items-center justify-center gap-2 py-6 border-2 border-dashed border-[var(--border-default)] rounded-[var(--r-xl)] text-sm text-[var(--text-secondary)] hover:border-[var(--nutrition-color)] hover:text-[var(--nutrition-color)] transition-all"
+              >
+                <Target size={18} /> Configurar objetivos nutricionales
+              </button>
+            )}
+
+            {/* Quick add buttons */}
+            <div className="flex gap-2">
+              {([
+                { mode: 'photo' as AddMode,    icon: Camera,   label: 'Foto' },
+                { mode: 'voice' as AddMode,    icon: Mic,      label: 'Voz' },
+                { mode: 'barcode' as AddMode,  icon: ScanLine, label: 'Código' },
+                { mode: 'template' as AddMode, icon: ChefHat,  label: 'Plantilla' },
+                { mode: 'manual' as AddMode,   icon: PenLine,  label: 'Manual' },
+              ]).map(({ mode, icon: Icon, label }) => (
+                <button
+                  key={mode}
+                  onClick={() => openAdd('snack', mode)}
+                  className="flex-1 flex flex-col items-center gap-1.5 py-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] hover:border-[var(--nutrition-color)] hover:bg-[var(--bg-hover)] transition-all"
+                >
+                  <Icon size={18} className="text-[var(--text-secondary)]" />
+                  <span className="text-[10px] text-[var(--text-tertiary)]">{label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Meal cards */}
+            <div className="space-y-3">
+              {MEAL_TYPES.map(mealType => {
+                const meal = meals.find(m => m.type === mealType);
+                return meal ? (
+                  <MealCard
+                    key={meal.id}
+                    meal={meal}
+                    onAddEntry={() => openAdd(mealType, 'photo')}
+                  />
+                ) : isToday ? (
+                  <button
+                    key={mealType}
+                    onClick={async () => { await store.addMeal(date, mealType); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 bg-[var(--bg-surface)] border border-dashed border-[var(--border-default)] rounded-[var(--r-xl)] hover:border-[var(--nutrition-color)] hover:bg-[var(--bg-hover)] transition-all"
+                  >
+                    <Plus size={14} className="text-[var(--text-tertiary)] shrink-0" />
+                    <span className="text-sm text-[var(--text-secondary)]">{MEAL_LABELS[mealType]}</span>
+                  </button>
+                ) : null;
+              })}
+            </div>
+
+            {/* Totals summary card */}
+            {totals.calories > 0 && (
+              <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
+                <p className="text-xs font-medium text-[var(--text-tertiary)] mb-3">Resumen del día</p>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    { label: 'kcal',      value: totals.calories, color: 'var(--accent)' },
+                    { label: 'Proteínas', value: `${totals.protein}g`, color: 'var(--nutrition-color)' },
+                    { label: 'Carbos',    value: `${totals.carbs}g`,   color: 'var(--warning)' },
+                    { label: 'Grasas',    value: `${totals.fat}g`,     color: 'var(--journal-color)' },
+                  ].map(m => (
+                    <div key={m.label}>
+                      <p className="text-lg font-bold" style={{ color: m.color }}>{m.value}</p>
+                      <p className="text-[9px] text-[var(--text-tertiary)]">{m.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        </TabsContent>
+
+        {/* ── Week ─────────────────────────────────────── */}
+        <TabsContent value="week">
+          <div className="mt-3 space-y-4">
+            <MacroRatioChart store={store} />
+            <CaloriesWeekChart store={store} />
+            <MacroSplitChart store={store} />
+          </div>
+        </TabsContent>
+
+        {/* ── Month ────────────────────────────────────── */}
+        <TabsContent value="month">
+          <div className="mt-3 space-y-4">
+            <CaloriesMonthChart store={store} />
+            <BodyWeightChart bodyWeight={store.bodyWeight} />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Modals */}
       <Modal open={addMode === 'photo'} onClose={() => setAddMode(null)} title="Analizar foto">

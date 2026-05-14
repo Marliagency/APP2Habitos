@@ -3,7 +3,6 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { Plus, Dumbbell, BarChart2, ChevronRight, Trophy, Calculator, Scale, TrendingUp, AlertTriangle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import {
   Button, EmptyState, Modal, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent,
 } from '../../../shared/components/ui';
@@ -13,6 +12,10 @@ import { WORKOUT_TEMPLATES } from '../data/templates';
 import { EXERCISE_MAP } from '../data/exercises';
 import ActiveWorkoutView from './ActiveWorkoutView';
 import { computeRecommendations, computeFatigueScore } from '../utils/progressiveOverload';
+import {
+  WorkoutsVolumeChart, WorkoutsFrequencyChart,
+  MuscleDistributionChart, TopPRsChart, OneRMProgressionChart,
+} from '../components/WorkoutsCharts';
 import type { WorkoutTemplate } from '../types';
 
 const ExerciseDetailView = lazy(() => import('./ExerciseDetailView'));
@@ -42,7 +45,6 @@ function WorkoutsHome() {
   const { workouts, loaded, activeWorkout } = store;
 
   const recentWorkouts = [...workouts].reverse().slice(0, 20);
-  const volumeData     = store.getVolumeByWeek();
   const fatigueScore   = computeFatigueScore(workouts);
   const recommendations = computeRecommendations(workouts, EXERCISE_MAP as Map<string, { name: string }>);
 
@@ -224,7 +226,6 @@ function WorkoutsHome() {
             />
           ) : (
             <div className="mt-3 space-y-4">
-              {/* Summary cards */}
               <div className="grid grid-cols-3 gap-3">
                 <StatCard label="Total sesiones" value={String(workouts.length)} />
                 <StatCard
@@ -232,29 +233,16 @@ function WorkoutsHome() {
                   value={`${Math.round(workouts.reduce((s, w) => s + w.totalVolume, 0) / 1000)}t`}
                 />
                 <StatCard
-                  label="PRs conseguidos"
+                  label="PRs"
                   value={String(workouts.reduce((s, w) => s + w.prs.length, 0))}
                   icon={<Trophy size={12} />}
                 />
               </div>
-
-              {/* Volume chart */}
-              {volumeData.length > 1 && (
-                <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-lg)] p-4">
-                  <p className="text-xs font-medium text-[var(--text-tertiary)] mb-3">Volumen por semana (kg)</p>
-                  <ResponsiveContainer width="100%" height={140}>
-                    <BarChart data={volumeData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="week" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} />
-                      <Tooltip
-                        contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 8, fontSize: 12 }}
-                        cursor={{ fill: 'var(--bg-hover)' }}
-                      />
-                      <Bar dataKey="volume" fill="var(--neutral-900)" radius={[4, 4, 0, 0]} name="Volumen" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <WorkoutsVolumeChart workouts={workouts} />
+              <WorkoutsFrequencyChart workouts={workouts} />
+              <MuscleDistributionChart workouts={workouts} />
+              <TopPRsChart workouts={workouts} />
+              <OneRMProgressionChart workouts={workouts} />
             </div>
           )}
         </TabsContent>
