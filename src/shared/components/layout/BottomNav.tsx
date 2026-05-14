@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
-import { LayoutDashboard, CheckSquare, Dumbbell, Apple, ListTodo } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Dumbbell, Apple, Target } from 'lucide-react';
 import clsx from 'clsx';
 
 const navItems: { to: string; icon: LucideIcon; label: string; end?: boolean }[] = [
@@ -8,7 +8,7 @@ const navItems: { to: string; icon: LucideIcon; label: string; end?: boolean }[]
   { to: '/habits', icon: CheckSquare, label: 'Hábitos' },
   { to: '/workouts', icon: Dumbbell, label: 'Entrenos' },
   { to: '/nutrition', icon: Apple, label: 'Nutrición' },
-  { to: '/tasks', icon: ListTodo, label: 'Tareas' },
+  { to: '/goals', icon: Target, label: 'Objetivos' },
 ];
 
 export function BottomNav() {

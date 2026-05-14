@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Camera, Mic, ScanLine, Plus, Target, Scale, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, Mic, ScanLine, Plus, Target, Scale, ChevronLeft, ChevronRight, ChefHat } from 'lucide-react';
 import { useNutritionStore } from '../store/nutritionStore';
 import { DailyRings } from '../components/DailyRings';
 import { MealCard } from '../components/MealCard';
@@ -9,13 +9,14 @@ import { PhotoAnalyzer } from '../components/PhotoAnalyzer';
 import { VoiceInput } from '../components/VoiceInput';
 import { BarcodeScanner } from '../components/BarcodeScanner';
 import { NutritionTargetsWizard } from '../components/NutritionTargetsWizard';
+import { MealTemplateSheet } from '../components/MealTemplateSheet';
 import { Button, Modal, Skeleton } from '../../../shared/components/ui';
 import { MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
 
 const MEAL_TYPES: Meal['type'][] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
-type AddMode = 'photo' | 'voice' | 'barcode' | null;
+type AddMode = 'photo' | 'voice' | 'barcode' | 'template' | null;
 
 export default function NutritionView() {
   const store = useNutritionStore();
@@ -121,9 +122,10 @@ export default function NutritionView() {
       {/* Quick add buttons */}
       <div className="flex gap-2">
         {([
-          { mode: 'photo' as AddMode, icon: Camera, label: 'Foto' },
-          { mode: 'voice' as AddMode, icon: Mic,    label: 'Voz' },
-          { mode: 'barcode' as AddMode, icon: ScanLine, label: 'Código' },
+          { mode: 'photo' as AddMode,    icon: Camera,   label: 'Foto' },
+          { mode: 'voice' as AddMode,    icon: Mic,      label: 'Voz' },
+          { mode: 'barcode' as AddMode,  icon: ScanLine, label: 'Código' },
+          { mode: 'template' as AddMode, icon: ChefHat,  label: 'Plantilla' },
         ]).map(({ mode, icon: Icon, label }) => (
           <button
             key={mode}
@@ -210,6 +212,13 @@ export default function NutritionView() {
       <Modal open={showTargets} onClose={() => setShowTargets(false)} title="Objetivos nutricionales">
         <NutritionTargetsWizard onDone={() => setShowTargets(false)} />
       </Modal>
+      <MealTemplateSheet
+        open={addMode === 'template'}
+        onClose={() => setAddMode(null)}
+        date={date}
+        mealType={activeMealType}
+      />
+
       <Modal open={showWeight} onClose={() => setShowWeight(false)} title="Peso corporal">
         <div className="space-y-4">
           <div className="space-y-1.5">

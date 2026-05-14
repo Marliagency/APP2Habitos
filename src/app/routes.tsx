@@ -12,6 +12,8 @@ const TasksView = lazy(() => import('../features/tasks/views/TasksView'));
 const AssistantView = lazy(() => import('../features/ai/views/AssistantView'));
 const AnalyticsView = lazy(() => import('../features/analytics/views/AnalyticsView'));
 const SettingsView = lazy(() => import('../features/settings/views/SettingsView'));
+const GoalsHubView = lazy(() => import('../features/goals/views/GoalsHubView'));
+const GoalWizardView = lazy(() => import('../features/goals/views/GoalWizardView'));
 
 function PageFallback() {
   return (
@@ -35,6 +37,8 @@ export function AppRoutes() {
         <Route path="/nutrition/*" element={<NutritionView />} />
         <Route path="/journal/*" element={<JournalView />} />
         <Route path="/tasks/*" element={<TasksView />} />
+        <Route path="/goals" element={<GoalsHubView />} />
+        <Route path="/goals/wizard" element={<GoalWizardView />} />
         <Route path="/assistant" element={<AssistantView />} />
         <Route path="/analytics" element={<AnalyticsView />} />
         <Route path="/settings" element={<SettingsView />} />

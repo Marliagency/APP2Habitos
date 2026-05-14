@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
   CheckSquare, Dumbbell, Apple, BookOpen, ListTodo,
-  Bot, BarChart2, Settings, Home, LayoutDashboard
+  Bot, BarChart2, Settings, Home, LayoutDashboard, Target
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -14,6 +14,7 @@ const navItems: { to: string; icon: LucideIcon; label: string; color?: string; e
   { to: '/nutrition', icon: Apple, label: 'Nutrición', color: 'var(--nutrition-color)' },
   { to: '/journal', icon: BookOpen, label: 'Diario', color: 'var(--journal-color)' },
   { to: '/tasks', icon: ListTodo, label: 'Tareas', color: 'var(--task-color)' },
+  { to: '/goals', icon: Target, label: 'Objetivos', color: 'var(--accent)' },
 ];
 
 const bottomItems: { to: string; icon: LucideIcon; label: string }[] = [
