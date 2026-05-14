@@ -151,7 +151,7 @@ function WeeklySummaryCard({
     },
     {
       label: 'Ánimo',
-      value: avgMood7d !== null ? `${avgMood7d.toFixed(1)}/5` : '–',
+      value: avgMood7d !== null ? `${Math.round(avgMood7d * 10) / 10}/5` : '–',
       sub: 'media 7d',
       color: moodColor,
     },
@@ -325,7 +325,7 @@ export default function DashboardView() {
           icon={<Target size={14} />}
           label="Objetivos"
           to="/goals"
-          sub={data.avgMood7d !== null ? `Ánimo: ${data.avgMood7d.toFixed(1)}/5` : 'Configura tu objetivo'}
+          sub={data.avgMood7d !== null ? `Ánimo: ${Math.round(data.avgMood7d * 10) / 10}/5` : 'Configura tu objetivo'}
           accent="var(--accent)"
         />
       </div>
