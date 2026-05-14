@@ -1,88 +1,111 @@
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap');
-
 :root {
-  /* === FONDOS === */
-  --bg-void:     #fafafa;
-  --bg-base:     #f5f5f5;
+  /* ── Fondos Apple iOS ──────────────────────────────────── */
+  --bg-void:     #f2f2f7;   /* gris sistema iOS */
+  --bg-base:     #f2f2f7;
   --bg-surface:  #ffffff;
   --bg-elevated: #ffffff;
-  --bg-hover:    #f0f0f0;
-  --bg-sunken:   #eeeeee;
-  --bg-selected: #e8e8e8;
+  --bg-hover:    #ececf0;
+  --bg-sunken:   #e5e5ea;
+  --bg-selected: #e5e5ea;
 
-  /* === ESCALA NEUTRAL === */
+  /* ── Separadores Apple ─────────────────────────────────── */
+  --separator:         rgba(60,60,67,0.12);
+  --separator-opaque:  #c6c6c8;
+
+  /* ── Escala neutral ────────────────────────────────────── */
   --neutral-0:   #ffffff;
-  --neutral-50:  #fafafa;
-  --neutral-100: #f4f4f5;
-  --neutral-200: #e4e4e7;
-  --neutral-300: #d4d4d8;
-  --neutral-400: #a1a1aa;
-  --neutral-500: #71717a;
-  --neutral-600: #52525b;
-  --neutral-700: #3f3f46;
-  --neutral-800: #27272a;
-  --neutral-900: #18181b;
-  --neutral-950: #09090b;
+  --neutral-50:  #f2f2f7;
+  --neutral-100: #e5e5ea;
+  --neutral-200: #d1d1d6;
+  --neutral-300: #c7c7cc;
+  --neutral-400: #aeaeb2;
+  --neutral-500: #8e8e93;
+  --neutral-600: #636366;
+  --neutral-700: #48484a;
+  --neutral-800: #3a3a3c;
+  --neutral-900: #2c2c2e;
+  --neutral-950: #1c1c1e;
 
-  /* === TEXTO === */
-  --text-primary:     #09090b;
-  --text-secondary:   #52525b;
-  --text-tertiary:    #a1a1aa;
-  --text-placeholder: #d4d4d8;
+  /* ── Texto Apple exact ─────────────────────────────────── */
+  --text-primary:     #000000;
+  --text-secondary:   rgba(60,60,67,0.6);
+  --text-tertiary:    rgba(60,60,67,0.3);
+  --text-placeholder: rgba(60,60,67,0.18);
   --text-inverse:     #ffffff;
 
-  /* === BORDES === */
-  --border-subtle:  rgba(0,0,0,0.04);
-  --border-default: rgba(0,0,0,0.08);
-  --border-strong:  rgba(0,0,0,0.16);
-  --border-focus:   rgba(0,0,0,0.85);
+  /* ── Bordes ────────────────────────────────────────────── */
+  --border-subtle:  rgba(60,60,67,0.08);
+  --border-default: rgba(60,60,67,0.14);
+  --border-strong:  rgba(60,60,67,0.25);
+  --border-focus:   #007aff;
 
-  /* === ACENTO PRIMARIO === */
-  --accent:        #0066ff;
-  --accent-hover:  #0052cc;
-  --accent-subtle: #eff6ff;
-  --accent-border: rgba(0, 102, 255, 0.20);
+  /* ── Azul Apple exacto ─────────────────────────────────── */
+  --accent:        #007aff;
+  --accent-hover:  #0062cc;
+  --accent-subtle: rgba(0,122,255,0.08);
+  --accent-border: rgba(0,122,255,0.25);
 
-  /* === SEMÁNTICOS === */
-  --success:        #10b981;
-  --success-subtle: #ecfdf5;
-  --warning:        #f59e0b;
-  --warning-subtle: #fffbeb;
-  --danger:         #ef4444;
-  --danger-subtle:  #fef2f2;
+  /* ── Colores sistema Apple ─────────────────────────────── */
+  --success:        #34c759;
+  --success-subtle: rgba(52,199,89,0.10);
+  --warning:        #ff9500;
+  --warning-subtle: rgba(255,149,0,0.10);
+  --danger:         #ff3b30;
+  --danger-subtle:  rgba(255,59,48,0.10);
 
-  /* === COLORES DE FEATURES === */
-  --habit-color:    #0066ff;
-  --workout-color:  #18181b;
-  --nutrition-color:#10b981;
-  --journal-color:  #7c3aed;
-  --task-color:     #f59e0b;
+  /* ── Colores por sección ────────────────────────────────── */
+  --c-habits:    #007aff;
+  --c-workouts:  #ff3b30;
+  --c-nutrition: #34c759;
+  --c-journal:   #af52de;
+  --c-tasks:     #ff9500;
+  --c-goals:     #5856d6;
+  --c-body:      #5ac8fa;
 
-  /* === RADIOS === */
-  --r-xs:   3px;
-  --r-sm:   6px;
-  --r-md:   10px;
-  --r-lg:   14px;
+  /* backward compat aliases */
+  --habit-color:    var(--c-habits);
+  --workout-color:  var(--c-workouts);
+  --nutrition-color:var(--c-nutrition);
+  --journal-color:  var(--c-journal);
+  --task-color:     var(--c-tasks);
+
+  /* ── Radios Apple ───────────────────────────────────────── */
+  --r-xs:   6px;
+  --r-sm:   10px;
+  --r-md:   13px;
+  --r-lg:   16px;
   --r-xl:   20px;
+  --r-2xl:  28px;
   --r-full: 9999px;
 
-  /* === SOMBRAS === */
+  /* ── Sombras Apple ──────────────────────────────────────── */
   --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.04);
-  --shadow-xl: 0 24px 56px rgba(0,0,0,0.10);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.05);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.12), 0 8px 20px rgba(0,0,0,0.06);
 
-  /* === TIPOGRAFÍA === */
-  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+  /* backward compat */
+  --sh-1: var(--shadow-sm);
+  --sh-2: var(--shadow-md);
+  --sh-3: var(--shadow-lg);
 
-  /* === MOTION === */
+  /* ── Tipografía SF Pro via -apple-system ────────────────── */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text',
+               'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'Fira Code', 'Menlo', monospace;
+
+  /* ── Transiciones Apple-style ───────────────────────────── */
+  --t-fast:   180ms cubic-bezier(0.25,0.46,0.45,0.94);
+  --t-base:   280ms cubic-bezier(0.25,0.46,0.45,0.94);
+  --t-spring: 500ms cubic-bezier(0.34,1.56,0.64,1);
+
+  /* backward compat */
   --ease:        cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out:    cubic-bezier(0, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* === SPACING SAFE AREA === */
+  /* ── Safe areas ─────────────────────────────────────────── */
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left:   env(safe-area-inset-left, 0px);
@@ -90,28 +113,51 @@
 }
 
 [data-theme="dark"] {
-  --bg-void:     #0a0a0a;
-  --bg-base:     #0f0f10;
-  --bg-surface:  #161618;
-  --bg-elevated: #1c1c1f;
-  --bg-hover:    #222225;
-  --bg-sunken:   #0a0a0b;
-  --bg-selected: #2a2a2e;
+  --bg-void:     #000000;
+  --bg-base:     #1c1c1e;
+  --bg-surface:  #2c2c2e;
+  --bg-elevated: #3a3a3c;
+  --bg-hover:    #3a3a3c;
+  --bg-sunken:   #1c1c1e;
+  --bg-selected: #48484a;
 
-  --text-primary:     #fafafa;
-  --text-secondary:   #a1a1aa;
-  --text-tertiary:    #52525b;
-  --text-placeholder: #3f3f46;
-  --text-inverse:     #09090b;
+  --separator:         rgba(84,84,88,0.65);
+  --separator-opaque:  #38383a;
 
-  --border-subtle:  rgba(255,255,255,0.04);
-  --border-default: rgba(255,255,255,0.08);
-  --border-strong:  rgba(255,255,255,0.16);
-  --border-focus:   rgba(255,255,255,0.85);
+  --text-primary:     #ffffff;
+  --text-secondary:   rgba(235,235,245,0.6);
+  --text-tertiary:    rgba(235,235,245,0.3);
+  --text-placeholder: rgba(235,235,245,0.18);
+  --text-inverse:     #000000;
 
-  --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
-  --shadow-xl: 0 24px 56px rgba(0,0,0,0.6);
+  --border-subtle:  rgba(84,84,88,0.20);
+  --border-default: rgba(84,84,88,0.35);
+  --border-strong:  rgba(84,84,88,0.55);
+  --border-focus:   #0a84ff;
+
+  --accent:        #0a84ff;
+  --accent-hover:  #409cff;
+  --accent-subtle: rgba(10,132,255,0.15);
+  --accent-border: rgba(10,132,255,0.30);
+
+  --success:        #30d158;
+  --success-subtle: rgba(48,209,88,0.12);
+  --warning:        #ff9f0a;
+  --warning-subtle: rgba(255,159,10,0.12);
+  --danger:         #ff453a;
+  --danger-subtle:  rgba(255,69,58,0.12);
+
+  --c-habits:    #0a84ff;
+  --c-workouts:  #ff453a;
+  --c-nutrition: #30d158;
+  --c-journal:   #bf5af2;
+  --c-tasks:     #ff9f0a;
+  --c-goals:     #6e6ef4;
+  --c-body:      #64d2ff;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.4);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.7), 0 8px 20px rgba(0,0,0,0.5);
 }

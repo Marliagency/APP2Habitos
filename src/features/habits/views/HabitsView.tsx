@@ -4,14 +4,19 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
   Button, EmptyState, Modal, Tabs, TabsList, TabsTrigger, TabsContent,
-  Skeleton, Badge,
+  Skeleton,
 } from '../../../shared/components/ui';
 import { useHabits } from '../hooks/useHabits';
+import { useHabitsStore } from '../store/habitsStore';
 import { HabitCard } from '../components/HabitCard';
 import { HabitForm } from '../components/HabitForm';
 import { HabitHeatmap } from '../components/HabitHeatmap';
 import { HabitStatsDisplay } from '../components/HabitStats';
 import { HABIT_PRESETS } from '../data/presets';
+import {
+  HabitsWeeklyChart, HabitsMonthlyChart,
+  HabitBreakdownChart, HabitsWeekdayRadar,
+} from '../components/HabitsCharts';
 import type { Habit, HabitEntry, HabitStats } from '../types';
 
 export default function HabitsView() {
@@ -21,6 +26,7 @@ export default function HabitsView() {
     markComplete, decrementCount, markSkipped, unmark,
     getEntriesForHabit, getStatsForHabit, getEntryForDate,
   } = useHabits();
+  const { entries: allEntries } = useHabitsStore();
 
   const [tab, setTab] = useState('all');
   const [showAdd, setShowAdd]         = useState(false);
@@ -31,8 +37,9 @@ export default function HabitsView() {
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
+  const { habits: allHabits } = useHabitsStore();
   const activeHabits   = habits.filter(h => !h.archivedAt);
-  const archivedHabits = habits.filter(h =>  h.archivedAt);
+  const archivedHabits = allHabits.filter(h =>  h.archivedAt);
 
   const handleAdd = async (data: Omit<Habit, 'id' | 'createdAt' | 'order'>) => {
     setSaving(true);
@@ -85,10 +92,13 @@ export default function HabitsView() {
       {/* Tabs */}
       <Tabs value={tab} onChange={setTab}>
         <TabsList>
-          <TabsTrigger value="all">Todos ({activeHabits.length})</TabsTrigger>
-          <TabsTrigger value="archived">Archivados ({archivedHabits.length})</TabsTrigger>
+          <TabsTrigger value="all">Hábitos</TabsTrigger>
+          <TabsTrigger value="week">Semana</TabsTrigger>
+          <TabsTrigger value="month">Mes</TabsTrigger>
+          <TabsTrigger value="stats">Stats</TabsTrigger>
         </TabsList>
 
+        {/* ── Tab: lista de hábitos ── */}
         <TabsContent value="all">
           {activeHabits.length === 0 ? (
             <EmptyState
@@ -120,38 +130,68 @@ export default function HabitsView() {
                   );
                 })}
               </AnimatePresence>
+              {archivedHabits.length > 0 && (
+                <button
+                  onClick={() => setTab('stats')}
+                  className="w-full text-center py-2 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+                >
+                  {archivedHabits.length} archivado{archivedHabits.length > 1 ? 's' : ''} · Ver en Stats
+                </button>
+              )}
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="archived">
-          {archivedHabits.length === 0 ? (
-            <EmptyState
-              icon={<Archive size={24} />}
-              title="Sin hábitos archivados"
-              className="mt-4"
-            />
+        {/* ── Tab: gráficos semanales ── */}
+        <TabsContent value="week">
+          {activeHabits.length === 0 ? (
+            <EmptyState icon={<BarChart2 size={24} />} title="Sin hábitos" className="mt-4" />
           ) : (
-            <div className="mt-3 space-y-2">
-              {archivedHabits.map(habit => (
-                <div
-                  key={habit.id}
-                  className="flex items-center gap-3 px-4 py-3 rounded-[var(--r-lg)] bg-[var(--bg-surface)] border border-[var(--border-subtle)] opacity-60"
-                >
-                  <span className="text-xl">{habit.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">{habit.name}</p>
-                    <Badge variant="default">Archivado</Badge>
+            <div className="mt-3 space-y-4">
+              <HabitsWeeklyChart habits={allHabits} entries={allEntries} />
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Tab: gráficos mensuales ── */}
+        <TabsContent value="month">
+          {activeHabits.length === 0 ? (
+            <EmptyState icon={<BarChart2 size={24} />} title="Sin hábitos" className="mt-4" />
+          ) : (
+            <div className="mt-3 space-y-4">
+              <HabitsMonthlyChart habits={allHabits} entries={allEntries} />
+              <HabitBreakdownChart habits={allHabits} entries={allEntries} />
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Tab: estadísticas avanzadas ── */}
+        <TabsContent value="stats">
+          {activeHabits.length === 0 ? (
+            <EmptyState icon={<BarChart2 size={24} />} title="Sin hábitos" className="mt-4" />
+          ) : (
+            <div className="mt-3 space-y-4">
+              <HabitsWeekdayRadar habits={allHabits} entries={allEntries} />
+              {archivedHabits.length > 0 && (
+                <div className="section-group">
+                  <p className="section-header">Archivados</p>
+                  <div className="section-body">
+                    {archivedHabits.map(habit => (
+                      <div key={habit.id} className="section-row">
+                        <span style={{ fontSize: 18 }}>{habit.emoji}</span>
+                        <div className="section-row-content">
+                          <div>
+                            <span className="section-row-label" style={{ fontSize: 15, opacity: 0.6 }}>{habit.name}</span>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => updateHabit(habit.id, { archivedAt: null })}>
+                            Restaurar
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => updateHabit(habit.id, { archivedAt: null })}
-                  >
-                    Restaurar
-                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </TabsContent>

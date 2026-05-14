@@ -10,6 +10,7 @@ import { useNutritionStore } from '../../nutrition/store/nutritionStore';
 import { useTasksStore }     from '../../tasks/store/tasksStore';
 import { useGoalsStore }     from '../../goals/store/goalsStore';
 import { useDashboardData }  from '../hooks/useDashboardData';
+import { useAchievements }   from '../hooks/useAchievements';
 import { KPIBand }           from '../components/KPIBand';
 import { LifeScoreSection }  from '../components/LifeScoreSection';
 import { HabitsSection }     from '../components/HabitsSection';
@@ -171,6 +172,54 @@ function WeeklySummaryCard({
   );
 }
 
+// ─── Achievements table ────────────────────────────────────────────────────────
+function AchievementsTable() {
+  const navigate = useNavigate();
+  const achievements = useAchievements();
+
+  if (achievements.length === 0) return null;
+
+  return (
+    <div className="section-group">
+      <p className="section-header">Logros</p>
+      <div className="section-body">
+        {achievements.map(a => (
+          <button
+            key={a.id}
+            onClick={() => navigate(a.route)}
+            className="section-row section-row-pressable w-full text-left"
+          >
+            <div
+              className="section-row-icon"
+              style={{ background: `${a.color}18`, color: a.color }}
+            >
+              <span style={{ fontSize: 16 }}>{a.emoji}</span>
+            </div>
+            <div className="section-row-content">
+              <div>
+                <span className="section-row-label">{a.title}</span>
+                <span className="section-row-value" style={{ color: a.color, fontWeight: 600 }}>
+                  {a.dateLabel}
+                </span>
+              </div>
+              <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5 leading-tight">{a.description}</p>
+              <div className="mt-1.5" style={{ height: 3, background: 'var(--bg-hover)', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${a.progressPct}%`,
+                  background: a.color,
+                  borderRadius: 2,
+                  transition: 'width 0.8s ease',
+                }} />
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardView() {
   const navigate = useNavigate();
 
@@ -314,6 +363,9 @@ export default function DashboardView() {
           totalPRs={data.totalPRs}
         />
       )}
+
+      {/* Achievements */}
+      <AchievementsTable />
 
       {/* Empty state for brand-new users */}
       {activeHabits.length === 0 && data.workouts.length === 0 && !hasJournalOrTasks && (
