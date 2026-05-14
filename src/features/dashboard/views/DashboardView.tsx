@@ -11,6 +11,7 @@ import { useTasksStore }     from '../../tasks/store/tasksStore';
 import { useGoalsStore }     from '../../goals/store/goalsStore';
 import { useDashboardData }  from '../hooks/useDashboardData';
 import { useAchievements }   from '../hooks/useAchievements';
+import { ActivityRings }     from '../components/ActivityRings';
 import { KPIBand }           from '../components/KPIBand';
 import { LifeScoreSection }  from '../components/LifeScoreSection';
 import { HabitsSection }     from '../components/HabitsSection';
@@ -338,6 +339,40 @@ export default function DashboardView() {
         calorieTarget={data.calorieTarget ?? goal?.derived.calorieTarget ?? null}
         avgMood7d={data.avgMood7d}
       />
+
+      {/* Activity Rings */}
+      {(activeHabits.length > 0 || data.caloriesToday !== null) && (
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
+          <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-3">Actividad hoy</p>
+          <ActivityRings
+            rings={[
+              {
+                value: activeHabits.length > 0 ? Math.round((completedToday / activeHabits.length) * 100) : 0,
+                color: '#007aff',
+                label: 'Hábitos',
+                sublabel: `${completedToday}/${activeHabits.length} completados`,
+              },
+              {
+                value: (() => {
+                  const target = goal?.derived.workoutDaysPerWeek ?? 3;
+                  return Math.min(100, Math.round((workoutsThisWeek / target) * 100));
+                })(),
+                color: '#ff3b30',
+                label: 'Entrenos',
+                sublabel: `${workoutsThisWeek} sesiones esta semana`,
+              },
+              {
+                value: data.caloriesToday !== null && data.calorieTarget !== null
+                  ? Math.min(100, Math.round((data.caloriesToday / data.calorieTarget) * 100))
+                  : 0,
+                color: '#34c759',
+                label: 'Nutrición',
+                sublabel: data.caloriesToday !== null ? `${data.caloriesToday} kcal` : 'Sin datos',
+              },
+            ]}
+          />
+        </div>
+      )}
 
       {/* Life Score section */}
       <LifeScoreSection
