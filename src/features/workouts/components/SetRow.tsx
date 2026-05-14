@@ -18,6 +18,7 @@ const SET_TYPE_COLORS: Record<ExerciseSet['type'], string> = {
   dropset: 'text-[var(--warning)] bg-[var(--warning-subtle)]',
   failure: 'text-[var(--danger)] bg-[var(--danger-subtle)]',
   amrap:   'text-[var(--accent)] bg-[var(--accent-subtle)]',
+  myo_rep: 'text-[var(--journal-color)] bg-[var(--journal-subtle)]',
 };
 
 export function SetRow({ set, index, previousWeight, previousReps, onChange, onRemove, onComplete }: SetRowProps) {

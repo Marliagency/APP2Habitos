@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { Plus, Dumbbell, BarChart2, ChevronRight, Trophy, Calculator } from 'lucide-react';
+import { Plus, Dumbbell, BarChart2, ChevronRight, Trophy, Calculator, Scale, TrendingUp, AlertTriangle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -12,7 +12,11 @@ import { PlateCalculator } from '../components/PlateCalculator';
 import { WORKOUT_TEMPLATES } from '../data/templates';
 import { EXERCISE_MAP } from '../data/exercises';
 import ActiveWorkoutView from './ActiveWorkoutView';
+import { computeRecommendations, computeFatigueScore } from '../utils/progressiveOverload';
 import type { WorkoutTemplate } from '../types';
+
+const ExerciseDetailView = lazy(() => import('./ExerciseDetailView'));
+const BodyMetricsView    = lazy(() => import('./BodyMetricsView'));
 
 // ── Router entry ─────────────────────────────────────────────────────────────
 export default function WorkoutsView() {
@@ -20,6 +24,8 @@ export default function WorkoutsView() {
     <Routes>
       <Route index element={<WorkoutsHome />} />
       <Route path="active" element={<ActiveWorkoutView />} />
+      <Route path="exercise/:exerciseId" element={<Suspense fallback={<div className="p-4"><Skeleton className="h-64 w-full" /></div>}><ExerciseDetailView /></Suspense>} />
+      <Route path="body" element={<Suspense fallback={<div className="p-4"><Skeleton className="h-64 w-full" /></div>}><BodyMetricsView /></Suspense>} />
     </Routes>
   );
 }
@@ -37,6 +43,8 @@ function WorkoutsHome() {
 
   const recentWorkouts = [...workouts].reverse().slice(0, 20);
   const volumeData     = store.getVolumeByWeek();
+  const fatigueScore   = computeFatigueScore(workouts);
+  const recommendations = computeRecommendations(workouts, EXERCISE_MAP as Map<string, { name: string }>);
 
   const handleStartEmpty = () => {
     if (!startName.trim()) return;
@@ -68,6 +76,7 @@ function WorkoutsHome() {
           <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{workouts.length} sesiones</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="ghost" size="sm" icon={<Scale size={14} />} onClick={() => navigate('body')} />
           <Button variant="ghost" size="sm" icon={<Calculator size={14} />} onClick={() => setShowPlateCalc(true)}>
             Discos
           </Button>
@@ -98,11 +107,23 @@ function WorkoutsHome() {
         </button>
       )}
 
+      {/* Fatigue banner */}
+      {fatigueScore >= 70 && (
+        <div className="flex items-center gap-2.5 px-4 py-3 bg-[var(--warning-subtle)] border border-[var(--warning)] rounded-[var(--r-lg)]">
+          <AlertTriangle size={16} className="text-[var(--warning)] shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-[var(--text-primary)]">Fatiga elevada ({fatigueScore}/100)</p>
+            <p className="text-[10px] text-[var(--text-secondary)]">Considera una semana de deload para recuperarte mejor.</p>
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <Tabs value={tab} onChange={setTab}>
         <TabsList>
           <TabsTrigger value="history">Historial</TabsTrigger>
           <TabsTrigger value="templates">Plantillas</TabsTrigger>
+          <TabsTrigger value="progress">Progresión</TabsTrigger>
           <TabsTrigger value="stats">Stats</TabsTrigger>
         </TabsList>
 
@@ -234,6 +255,40 @@ function WorkoutsHome() {
                   </ResponsiveContainer>
                 </div>
               )}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Progresión ──────────────────────────────── */}
+        <TabsContent value="progress">
+          {recommendations.length === 0 ? (
+            <EmptyState
+              icon={<TrendingUp size={24} />}
+              title="Sin recomendaciones aún"
+              description="Registra al menos 2 sesiones del mismo ejercicio para ver sugerencias de progresión."
+              className="mt-4"
+            />
+          ) : (
+            <div className="mt-3 space-y-2">
+              {recommendations.slice(0, 8).map(rec => (
+                <button
+                  key={rec.exerciseId}
+                  onClick={() => navigate(`exercise/${rec.exerciseId}`)}
+                  className="w-full flex items-start gap-3 px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-lg)] hover:bg-[var(--bg-hover)] transition-colors text-left"
+                >
+                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${rec.confidence === 'high' ? 'bg-[var(--success)]' : rec.confidence === 'medium' ? 'bg-[var(--warning)]' : 'bg-[var(--danger)]'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--text-primary)] truncate">{rec.exerciseName}</p>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5">Anterior: {rec.lastWeight}kg × {rec.lastReps}</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] mt-0.5">{rec.note}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-semibold text-[var(--accent)]">{rec.suggestedWeight}kg</p>
+                    <p className="text-[10px] text-[var(--text-tertiary)]">× {rec.suggestedReps}</p>
+                  </div>
+                  <ChevronRight size={14} className="text-[var(--text-tertiary)] mt-0.5 shrink-0" />
+                </button>
+              ))}
             </div>
           )}
         </TabsContent>

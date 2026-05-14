@@ -18,13 +18,16 @@ export const ExerciseSchema = z.object({
 
 export const SetSchema = z.object({
   id: z.string(),
-  type: z.enum(['warmup', 'working', 'dropset', 'failure', 'amrap']),
+  type: z.enum(['warmup', 'working', 'dropset', 'failure', 'amrap', 'myo_rep']),
   weight: z.number().nullable(),
   reps: z.number().nullable(),
   duration: z.number().nullable(),
   distance: z.number().nullable(),
   rpe: z.number().min(1).max(10).nullable(),
+  rir: z.number().min(0).max(10).nullable().optional(),   // Reps In Reserve
+  tempo: z.string().nullable().optional(),                // e.g. "3-1-2-0"
   completed: z.boolean(),
+  isPR: z.boolean().optional(),
   notes: z.string().optional(),
 });
 
@@ -84,11 +87,43 @@ export type WorkoutTemplate = z.infer<typeof WorkoutTemplateSchema>;
 export type MuscleGroup = z.infer<typeof MuscleGroupSchema>;
 export type PR = z.infer<typeof PRSchema>;
 
-// Calculated 1RM via Epley formula: w * (1 + r/30)
-export function calc1RM(weight: number, reps: number): number {
+// 1RM formulas
+export function calc1RMEpley(weight: number, reps: number): number {
   if (reps === 1) return weight;
   return Math.round(weight * (1 + reps / 30));
 }
+export function calc1RMBrzycki(weight: number, reps: number): number {
+  if (reps === 1) return weight;
+  return Math.round(weight * (36 / (37 - reps)));
+}
+export function calc1RMLombardi(weight: number, reps: number): number {
+  if (reps === 1) return weight;
+  return Math.round(weight * Math.pow(reps, 0.1));
+}
+export function calc1RM(weight: number, reps: number): number {
+  // Averaged across 3 formulas for better accuracy
+  return Math.round((calc1RMEpley(weight, reps) + calc1RMBrzycki(weight, reps) + calc1RMLombardi(weight, reps)) / 3);
+}
+
+/** Wilks score for relative strength comparison */
+export function calcWilks(bodyweightKg: number, liftedKg: number, sex: 'male' | 'female'): number {
+  const mCoeffs = [-216.0475144, 16.2606339, -0.002388645, -0.00113732, 7.01863e-6, -1.291e-8];
+  const fCoeffs = [594.31747775582, -27.23842536447, 0.82112226871, -0.00930733913, 4.731582e-5, -9.054e-8];
+  const c = sex === 'male' ? mCoeffs : fCoeffs;
+  const bw = bodyweightKg;
+  const denom = c[0] + c[1]*bw + c[2]*bw**2 + c[3]*bw**3 + c[4]*bw**4 + c[5]*bw**5;
+  return Math.round((500 / denom) * liftedKg * 10) / 10;
+}
+
+// Workout goals types
+export const WorkoutGoalSchema = z.object({
+  type: z.enum(['strength', 'hypertrophy', 'endurance', 'powerlifting', 'weight_loss']),
+  exerciseId: z.string().optional(),
+  targetWeight: z.number().optional(),
+  targetReps: z.number().optional(),
+  targetDate: z.string().optional(),
+});
+export type WorkoutGoal = z.infer<typeof WorkoutGoalSchema>;
 
 export function calcTotalVolume(exercises: WorkoutExercise[]): number {
   return exercises.reduce((total, ex) => {
