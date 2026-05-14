@@ -1,14 +1,21 @@
 import { useEffect } from 'react';
 import { format, startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useHabitsStore } from '../../habits/store/habitsStore';
-import { useWorkoutsStore } from '../../workouts/store/workoutsStore';
-import { useDashboardData } from '../hooks/useDashboardData';
-import { KPIBand } from '../components/KPIBand';
-import { LifeScoreSection } from '../components/LifeScoreSection';
-import { HabitsSection } from '../components/HabitsSection';
-import { WorkoutsSection } from '../components/WorkoutsSection';
-import { Skeleton } from '../../../shared/components/ui';
+import { useNavigate } from 'react-router-dom';
+import { BookOpen, ListTodo, Utensils, Target } from 'lucide-react';
+import { useHabitsStore }    from '../../habits/store/habitsStore';
+import { useWorkoutsStore }  from '../../workouts/store/workoutsStore';
+import { useJournalStore }   from '../../journal/store/journalStore';
+import { useNutritionStore } from '../../nutrition/store/nutritionStore';
+import { useTasksStore }     from '../../tasks/store/tasksStore';
+import { useDashboardData }  from '../hooks/useDashboardData';
+import { KPIBand }           from '../components/KPIBand';
+import { LifeScoreSection }  from '../components/LifeScoreSection';
+import { HabitsSection }     from '../components/HabitsSection';
+import { WorkoutsSection }   from '../components/WorkoutsSection';
+import { Skeleton }          from '../../../shared/components/ui';
+import { MOOD_EMOJI, MOOD_COLOR, MOOD_LABELS } from '../../journal/types';
+import type { Mood } from '../../journal/types';
 
 function DashboardSkeleton() {
   return (
@@ -23,30 +30,112 @@ function DashboardSkeleton() {
   );
 }
 
+// ─── Quick action pill ────────────────────────────────────────────────────────
+function QuickLink({ icon, label, to, sub, accent }: {
+  icon: React.ReactNode; label: string; to: string; sub?: string; accent?: string;
+}) {
+  const navigate = useNavigate();
+  return (
+    <button
+      onClick={() => navigate(to)}
+      className="flex items-center gap-2.5 px-3 py-2.5 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] hover:border-[var(--border-default)] transition-all text-left w-full"
+    >
+      <div className="shrink-0" style={{ color: accent ?? 'var(--accent)' }}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-[var(--text-primary)] truncate">{label}</p>
+        {sub && <p className="text-[10px] text-[var(--text-tertiary)]">{sub}</p>}
+      </div>
+    </button>
+  );
+}
+
+// ─── Today's mood display ─────────────────────────────────────────────────────
+function TodayMoodCard({ mood, onLog }: { mood: Mood | null; onLog: () => void }) {
+  return (
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3 flex items-center gap-3">
+      <div className="w-9 h-9 rounded-full flex items-center justify-center bg-[var(--bg-hover)] text-xl shrink-0">
+        {mood ? MOOD_EMOJI[mood] : '?'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-[var(--text-primary)]">Estado de ánimo hoy</p>
+        <p className="text-[10px] text-[var(--text-tertiary)]">
+          {mood ? MOOD_LABELS[mood] : 'Sin registrar aún'}
+        </p>
+      </div>
+      {!mood && (
+        <button
+          onClick={onLog}
+          aria-label="Registrar estado de ánimo"
+          className="shrink-0 px-2.5 py-1 bg-[var(--accent)] text-white text-[10px] font-medium rounded-[var(--r-md)] hover:opacity-90 transition-opacity"
+        >
+          Registrar
+        </button>
+      )}
+      {mood && (
+        <div
+          className="w-2 h-2 rounded-full shrink-0"
+          style={{ backgroundColor: MOOD_COLOR[mood] }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Calorie progress bar ──────────────────────────────────────────────────────
+function CalorieBar({ calories, target }: { calories: number; target: number }) {
+  const pct  = Math.min(100, Math.round((calories / target) * 100));
+  const over = calories > target;
+  return (
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium text-[var(--text-primary)]">Calorías hoy</p>
+        <p className="text-xs font-bold" style={{ color: over ? 'var(--danger)' : 'var(--success)' }}>
+          {calories} <span className="text-[var(--text-tertiary)] font-normal">/ {target} kcal</span>
+        </p>
+      </div>
+      <div className="h-1.5 rounded-full bg-[var(--bg-hover)] overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{
+            width: `${pct}%`,
+            backgroundColor: over ? 'var(--danger)' : 'var(--success)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardView() {
-  const habitsStore   = useHabitsStore();
-  const workoutsStore = useWorkoutsStore();
+  const navigate = useNavigate();
+
+  const habitsStore    = useHabitsStore();
+  const workoutsStore  = useWorkoutsStore();
+  const journalStore   = useJournalStore();
+  const nutritionStore = useNutritionStore();
+  const tasksStore     = useTasksStore();
 
   useEffect(() => {
-    if (!habitsStore.loaded)   habitsStore.loadFromStorage();
-    if (!workoutsStore.loaded) workoutsStore.loadFromStorage();
+    if (!habitsStore.loaded)    habitsStore.loadFromStorage();
+    if (!workoutsStore.loaded)  workoutsStore.loadFromStorage();
+    if (!journalStore.loaded)   journalStore.loadFromStorage();
+    if (!nutritionStore.loaded) nutritionStore.loadFromStorage();
+    if (!tasksStore.loaded)     tasksStore.loadFromStorage();
   }, []);
 
   const data = useDashboardData();
 
-  if (!data.habitsLoaded || !data.workoutsLoaded) {
-    return <DashboardSkeleton />;
-  }
+  const allLoaded = data.habitsLoaded && data.workoutsLoaded;
+  if (!allLoaded) return <DashboardSkeleton />;
 
   const now   = new Date();
   const hour  = now.getHours();
   const greeting = hour < 13 ? 'Buenos días' : hour < 20 ? 'Buenas tardes' : 'Buenas noches';
   const dateStr  = format(now, "EEEE, d 'de' MMMM", { locale: es });
 
-  // Habit rate today
   const todayStr = format(now, 'yyyy-MM-dd');
-  const activeHabits = data.activeHabits;
-  const completedToday = data.habits.filter(h => !h.archivedAt).filter(h => {
+  const activeHabits    = data.activeHabits;
+  const completedToday  = data.habits.filter(h => !h.archivedAt).filter(h => {
     const entry = habitsStore.getEntryForDate(h.id, todayStr);
     return entry && entry.count > 0;
   }).length;
@@ -54,16 +143,17 @@ export default function DashboardView() {
     ? Math.round((completedToday / activeHabits.length) * 100)
     : 0;
 
-  // Workouts this week
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-  const weekEnd   = endOfWeek(now, { weekStartsOn: 1 });
+  const weekStart        = startOfWeek(now, { weekStartsOn: 1 });
+  const weekEnd          = endOfWeek(now, { weekStartsOn: 1 });
   const workoutsThisWeek = data.workouts.filter(w => {
     try { return isWithinInterval(parseISO(w.date), { start: weekStart, end: weekEnd }); }
     catch { return false; }
   }).length;
 
+  const hasJournalOrTasks = data.journalEntries.length > 0 || data.tasks.length > 0;
+
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6 pb-24">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5 pb-24">
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">{greeting}</h1>
@@ -80,6 +170,49 @@ export default function DashboardView() {
         totalWorkouts={data.workouts.length}
         last30Days={data.last30Days}
       />
+
+      {/* Today's mood + calorie bar */}
+      <div className="space-y-2">
+        <TodayMoodCard
+          mood={data.todayMood}
+          onLog={() => navigate('/journal')}
+        />
+        {data.caloriesToday !== null && data.calorieTarget !== null && (
+          <CalorieBar calories={data.caloriesToday} target={data.calorieTarget} />
+        )}
+      </div>
+
+      {/* Quick action grid */}
+      <div className="grid grid-cols-2 gap-2">
+        <QuickLink
+          icon={<BookOpen size={14} />}
+          label="Diario"
+          to="/journal"
+          sub={data.journalStreak > 0 ? `${data.journalStreak} días de racha` : 'Sin entradas aún'}
+          accent="var(--journal-color, #9333ea)"
+        />
+        <QuickLink
+          icon={<ListTodo size={14} />}
+          label="Tareas"
+          to="/tasks"
+          sub={data.tasksPendingToday > 0 ? `${data.tasksPendingToday} pendientes hoy` : 'Al día ✓'}
+          accent="var(--task-color, var(--accent))"
+        />
+        <QuickLink
+          icon={<Utensils size={14} />}
+          label="Nutrición"
+          to="/nutrition"
+          sub={data.caloriesToday !== null ? `${data.caloriesToday} kcal hoy` : 'Sin registro hoy'}
+          accent="var(--nutrition-color, var(--warning))"
+        />
+        <QuickLink
+          icon={<Target size={14} />}
+          label="Objetivos"
+          to="/goals"
+          sub={data.avgMood7d !== null ? `Ánimo: ${data.avgMood7d.toFixed(1)}/5` : 'Configura tu objetivo'}
+          accent="var(--accent)"
+        />
+      </div>
 
       {/* Life Score section */}
       <LifeScoreSection
@@ -106,13 +239,13 @@ export default function DashboardView() {
         />
       )}
 
-      {/* Empty state for new users */}
-      {activeHabits.length === 0 && data.workouts.length === 0 && (
-        <div className="text-center py-16 space-y-2">
+      {/* Empty state for brand-new users */}
+      {activeHabits.length === 0 && data.workouts.length === 0 && !hasJournalOrTasks && (
+        <div className="text-center py-12 space-y-2">
           <p className="text-4xl">🚀</p>
           <p className="text-base font-semibold text-[var(--text-primary)]">Empieza tu viaje</p>
           <p className="text-sm text-[var(--text-tertiary)] max-w-xs mx-auto">
-            Crea tus primeros hábitos o registra un entrenamiento para ver tu dashboard.
+            Crea tus primeros hábitos, registra un entrenamiento o define tu objetivo para ver tu dashboard personalizado.
           </p>
         </div>
       )}

@@ -1,11 +1,13 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Sun, Moon, Sunset, CheckCircle2, Flame, CheckSquare } from 'lucide-react';
+import { Sun, Moon, Sunset, CheckCircle2, Flame, CheckSquare, Smile } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useHabits } from '../hooks/useHabits';
 import { HabitCard } from '../components/HabitCard';
 import { EmptyState, ProgressBar, Skeleton } from '../../../shared/components/ui';
+import { useJournalStore } from '../../journal/store/journalStore';
+import { MOOD_EMOJI, MOOD_LABELS } from '../../journal/types';
 
 function getGreeting(): { text: string; Icon: typeof Sun } {
   const h = new Date().getHours();
@@ -22,6 +24,8 @@ export default function TodayView() {
   } = useHabits();
 
   const today = format(new Date(), 'yyyy-MM-dd');
+  const { getMoodByDate } = useJournalStore();
+  const todayMood = getMoodByDate(today);
   const { text: greeting, Icon: GreetingIcon } = getGreeting();
   const progress = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
   const allDone  = totalToday > 0 && completedToday === totalToday;
@@ -79,6 +83,30 @@ export default function TodayView() {
           <ProgressBar value={progress} color={allDone ? 'var(--success)' : 'var(--accent)'} />
         </motion.div>
       )}
+
+      {/* Quick mood card */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-lg)] p-3 flex items-center gap-3"
+      >
+        <div className="w-9 h-9 rounded-full bg-[var(--bg-hover)] flex items-center justify-center text-xl shrink-0">
+          {todayMood ? MOOD_EMOJI[todayMood] : <Smile size={16} className="text-[var(--text-tertiary)]" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-[var(--text-primary)]">Estado de ánimo</p>
+          <p className="text-[10px] text-[var(--text-tertiary)]">
+            {todayMood ? MOOD_LABELS[todayMood] : 'Sin registrar hoy'}
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/journal')}
+          className="shrink-0 px-2.5 py-1 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-medium rounded-[var(--r-md)] hover:bg-[var(--accent)]/20 transition-colors"
+        >
+          {todayMood ? 'Ver diario' : 'Registrar'}
+        </button>
+      </motion.div>
 
       {/* Habit list */}
       {totalToday === 0 ? (

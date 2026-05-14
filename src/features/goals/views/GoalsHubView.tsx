@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, Edit2, Trash2, CheckCircle2, TrendingUp, Utensils, Dumbbell, Brain, ListTodo, Zap } from 'lucide-react';
+import { Target, Edit2, Trash2, CheckCircle2, TrendingUp, Utensils, Dumbbell, Brain, ListTodo, Zap, Sparkles } from 'lucide-react';
 import { useGoalsStore } from '../store/goalsStore';
 import { useJournalStore } from '../../journal/store/journalStore';
 import { useNutritionStore } from '../../nutrition/store/nutritionStore';
@@ -43,8 +43,8 @@ export default function GoalsHubView() {
   const { toast } = useToast();
   const { goal, loaded, loadFromStorage, clearGoal } = useGoalsStore();
   const { getAverageMood }       = useJournalStore();
-  const { getTotalsForDate }     = useNutritionStore();
-  const { entries: habitEntries, habits } = useHabitsStore();
+  const { getTotalsForDate, targets: nutritionTargets, setTargets } = useNutritionStore();
+  const { entries: habitEntries, habits, addHabit } = useHabitsStore();
   const { workouts }             = useWorkoutsStore();
 
   useEffect(() => {
@@ -118,9 +118,38 @@ export default function GoalsHubView() {
     avgMood,
   });
 
+  const handleApplyNutritionTargets = async () => {
+    if (!goal) return;
+    await setTargets({
+      calories: goal.derived.calorieTarget,
+      protein:  goal.derived.proteinG,
+      carbs:    goal.derived.carbsG,
+      fat:      goal.derived.fatG,
+    });
+    toast('Objetivos nutricionales aplicados desde tu meta', 'success');
+  };
+
   const handleClear = async () => {
     await clearGoal();
     toast('Objetivo eliminado', 'info');
+  };
+
+  const handleAddHabit = async (suggestion: string) => {
+    await addHabit({
+      name: suggestion,
+      emoji: '✨',
+      color: '#6366f1',
+      category: 'other',
+      frequency: { type: 'daily', days: [0,1,2,3,4,5,6], timesPerWeek: null },
+      schedule: null,
+      type: 'boolean',
+      targetCount: null,
+      unit: null,
+      difficulty: 'medium',
+      linkedHabitId: null,
+      archivedAt: null,
+    });
+    toast(`Hábito "${suggestion.slice(0, 30)}…" añadido`, 'success');
   };
 
   return (
@@ -137,6 +166,23 @@ export default function GoalsHubView() {
           </Button>
         </div>
       </div>
+
+      {/* Apply targets to Nutrition banner */}
+      {!nutritionTargets && (
+        <div className="flex items-center gap-3 px-3 py-2.5 bg-[var(--accent)]/10 border border-[var(--accent)]/20 rounded-[var(--r-xl)]">
+          <Sparkles size={14} className="text-[var(--accent)] shrink-0" />
+          <p className="text-xs text-[var(--text-secondary)] flex-1">
+            Aplica los objetivos de calorías y proteína a la sección de Nutrición
+          </p>
+          <button
+            onClick={handleApplyNutritionTargets}
+            aria-label="Aplicar objetivos nutricionales"
+            className="shrink-0 px-2.5 py-1 bg-[var(--accent)] text-white text-[10px] font-medium rounded-[var(--r-md)] hover:opacity-90 transition-opacity"
+          >
+            Aplicar
+          </button>
+        </div>
+      )}
 
       {/* Active goal card */}
       <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
@@ -200,12 +246,25 @@ export default function GoalsHubView() {
       <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
         <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">Hábitos recomendados</p>
         <div className="space-y-2">
-          {goal.derived.habitSuggestions.slice(0, 5).map((h, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
-              <span className="text-[var(--accent)] shrink-0 mt-0.5">✓</span>
-              <span>{h}</span>
-            </div>
-          ))}
+          {goal.derived.habitSuggestions.slice(0, 5).map((h, i) => {
+            const alreadyAdded = habits.some(hab => hab.name === h);
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-[var(--accent)] shrink-0">✓</span>
+                <span className="text-xs text-[var(--text-secondary)] flex-1">{h}</span>
+                {alreadyAdded ? (
+                  <span className="text-[10px] text-[var(--success)] shrink-0 font-medium">Añadido</span>
+                ) : (
+                  <button
+                    onClick={() => handleAddHabit(h)}
+                    className="shrink-0 px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-medium rounded-[var(--r-md)] hover:bg-[var(--accent)]/20 transition-colors"
+                  >
+                    Añadir
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
