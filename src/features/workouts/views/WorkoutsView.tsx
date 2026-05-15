@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { Plus, Dumbbell, BarChart2, ChevronRight, Trophy, Calculator, Scale, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Plus, Dumbbell, BarChart2, ChevronRight, Trophy, Calculator, Scale, TrendingUp, AlertTriangle, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -10,7 +10,6 @@ import { useWorkouts } from '../hooks/useWorkouts';
 import { useWorkoutGoal } from '../hooks/useWorkoutGoal';
 import { fmt } from '../../../shared/utils/fmt';
 import { PlateCalculator } from '../components/PlateCalculator';
-import { WORKOUT_TEMPLATES } from '../data/templates';
 import { EXERCISE_MAP } from '../data/exercises';
 import ActiveWorkoutView from './ActiveWorkoutView';
 import { computeRecommendations, computeFatigueScore } from '../utils/progressiveOverload';
@@ -44,7 +43,7 @@ function WorkoutsHome() {
   const [showPlateCalc, setShowPlateCalc]   = useState(false);
   const [startName, setStartName]           = useState('');
 
-  const { workouts, loaded, activeWorkout } = store;
+  const { workouts, loaded, activeWorkout, templates, deleteUserTemplate } = store;
   const { weeklyTarget, workoutType, hasGoal } = useWorkoutGoal();
 
   const recentWorkouts = [...workouts].reverse().slice(0, 20);
@@ -192,13 +191,18 @@ function WorkoutsHome() {
         {/* ── Templates ───────────────────────────────── */}
         <TabsContent value="templates">
           <div className="mt-3 space-y-2">
-            {WORKOUT_TEMPLATES.map(t => (
+            {templates.map(t => (
               <div
                 key={t.id}
                 className="flex items-start gap-3 px-4 py-3 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-lg)]"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">{t.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-[var(--text-primary)]">{t.name}</p>
+                    {t.isCustom && (
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-[var(--accent)]/10 text-[var(--accent)]">Propia</span>
+                    )}
+                  </div>
                   {t.description && (
                     <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{t.description}</p>
                   )}
@@ -210,9 +214,20 @@ function WorkoutsHome() {
                     </span>
                   </div>
                 </div>
-                <Button variant="secondary" size="sm" onClick={() => handleStartTemplate(t)}>
-                  Empezar
-                </Button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {t.isCustom && (
+                    <button
+                      onClick={() => deleteUserTemplate(t.id)}
+                      className="w-7 h-7 flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--danger)] transition-colors rounded-[var(--r-md)]"
+                      title="Eliminar plantilla"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
+                  <Button variant="secondary" size="sm" onClick={() => handleStartTemplate(t)}>
+                    Empezar
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -314,7 +329,7 @@ function WorkoutsHome() {
             <div className="relative text-center"><span className="px-2 text-xs text-[var(--text-tertiary)] bg-[var(--bg-surface)]">o elige una plantilla</span></div>
           </div>
           <div className="space-y-2 max-h-60 overflow-y-auto">
-            {WORKOUT_TEMPLATES.map(t => (
+            {templates.map(t => (
               <button
                 key={t.id}
                 onClick={() => { setShowStart(false); handleStartTemplate(t); }}
