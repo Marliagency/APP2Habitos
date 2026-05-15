@@ -16,6 +16,7 @@ interface WorkoutsState {
   exercises: Exercise[];
   workouts: Workout[];
   templates: WorkoutTemplate[];
+  weeklyPlan: Record<number, string | null>; // 0=Sun … 6=Sat → templateId
   activeWorkout: Workout | null;
   loaded: boolean;
 
@@ -41,6 +42,9 @@ interface WorkoutsState {
   getVolumeByWeek: () => { week: string; volume: number }[];
   getWorkoutsByMonth: () => { date: string; count: number }[];
 
+  // Weekly plan
+  setDayPlan: (day: number, templateId: string | null) => Promise<void>;
+
   // User templates
   saveAsTemplate: (workout: Workout) => Promise<WorkoutTemplate>;
   deleteUserTemplate: (id: string) => Promise<void>;
@@ -53,21 +57,23 @@ export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
   exercises: EXERCISES,
   workouts: [],
   templates: WORKOUT_TEMPLATES,
+  weeklyPlan: {},
   activeWorkout: null,
   loaded: false,
 
   loadFromStorage: async () => {
-    const [workouts, customExercises, userTemplates] = await Promise.all([
+    const [workouts, customExercises, userTemplates, weeklyPlan] = await Promise.all([
       storage.getItem<Workout[]>(STORAGE_KEYS.workouts),
       storage.getItem<Exercise[]>(STORAGE_KEYS.exercises),
       storage.getItem<WorkoutTemplate[]>(STORAGE_KEYS.workoutTemplates),
+      storage.getItem<Record<number, string | null>>(STORAGE_KEYS.workoutPlan),
     ]);
     set({
-      workouts: workouts ?? [],
-      exercises: [...EXERCISES, ...(customExercises ?? [])],
-      // User templates come first (sorted by newest), then system templates
-      templates: [...(userTemplates ?? []), ...WORKOUT_TEMPLATES],
-      loaded: true,
+      workouts:    workouts ?? [],
+      exercises:   [...EXERCISES, ...(customExercises ?? [])],
+      templates:   [...(userTemplates ?? []), ...WORKOUT_TEMPLATES],
+      weeklyPlan:  weeklyPlan ?? {},
+      loaded:      true,
     });
   },
 
@@ -262,6 +268,12 @@ export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
       map.set(w.date, (map.get(w.date) ?? 0) + 1);
     }
     return [...map.entries()].map(([date, count]) => ({ date, count }));
+  },
+
+  setDayPlan: async (day, templateId) => {
+    const plan = { ...get().weeklyPlan, [day]: templateId };
+    set({ weeklyPlan: plan });
+    await storage.setItem(STORAGE_KEYS.workoutPlan, plan);
   },
 
   saveAsTemplate: async (workout) => {

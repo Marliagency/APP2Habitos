@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Trash2, Plus } from 'lucide-react';
 import { MacroBadges } from './DailyRings';
+import { RecentFoodsBar } from './RecentFoodsBar';
 import { useNutritionStore } from '../store/nutritionStore';
 import { sumMacros, MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
 
 interface MealCardProps {
   meal: Meal;
+  currentDate: string;
   onAddEntry: () => void;
 }
 
-export function MealCard({ meal, onAddEntry }: MealCardProps) {
+export function MealCard({ meal, currentDate, onAddEntry }: MealCardProps) {
   const [open, setOpen] = useState(true);
   const { removeEntry, deleteMeal } = useNutritionStore();
   const totals = sumMacros(meal.entries);
@@ -65,6 +67,9 @@ export function MealCard({ meal, onAddEntry }: MealCardProps) {
               ))}
             </div>
           )}
+
+          {/* Recent foods for this meal */}
+          <RecentFoodsBar mealId={meal.id} mealType={meal.type} currentDate={currentDate} />
 
           {/* Actions */}
           <div className="flex gap-2 px-3 py-2 border-t border-[var(--border-subtle)]">

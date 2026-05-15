@@ -43,7 +43,7 @@ function WorkoutsHome() {
   const [showPlateCalc, setShowPlateCalc]   = useState(false);
   const [startName, setStartName]           = useState('');
 
-  const { workouts, loaded, activeWorkout, templates, deleteUserTemplate, repeatWorkout } = store;
+  const { workouts, loaded, activeWorkout, templates, weeklyPlan, setDayPlan, deleteUserTemplate, repeatWorkout } = store;
   const { weeklyTarget, workoutType, hasGoal } = useWorkoutGoal();
 
   const recentWorkouts = [...workouts].reverse().slice(0, 20);
@@ -198,7 +198,14 @@ function WorkoutsHome() {
 
         {/* ── Templates ───────────────────────────────── */}
         <TabsContent value="templates">
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 space-y-4">
+            <WeeklyPlanSection
+              weeklyPlan={weeklyPlan}
+              templates={templates}
+              setDayPlan={setDayPlan}
+              onStartTemplate={handleStartTemplate}
+            />
+          <div className="space-y-2">
             {templates.map(t => (
               <div
                 key={t.id}
@@ -238,6 +245,7 @@ function WorkoutsHome() {
                 </div>
               </div>
             ))}
+          </div>
           </div>
         </TabsContent>
 
@@ -357,6 +365,115 @@ function WorkoutsHome() {
       {/* Plate calculator modal */}
       <Modal open={showPlateCalc} onClose={() => setShowPlateCalc(false)} title="Calculadora de discos">
         <PlateCalculator />
+      </Modal>
+    </div>
+  );
+}
+
+const WEEK_DAYS = [
+  { num: 1, label: 'Lun' },
+  { num: 2, label: 'Mar' },
+  { num: 3, label: 'Mié' },
+  { num: 4, label: 'Jue' },
+  { num: 5, label: 'Vie' },
+  { num: 6, label: 'Sáb' },
+  { num: 0, label: 'Dom' },
+];
+
+function WeeklyPlanSection({
+  weeklyPlan,
+  templates,
+  setDayPlan,
+  onStartTemplate,
+}: {
+  weeklyPlan: Record<number, string | null>;
+  templates: WorkoutTemplate[];
+  setDayPlan: (day: number, templateId: string | null) => Promise<void>;
+  onStartTemplate: (t: WorkoutTemplate) => void;
+}) {
+  const [editDay, setEditDay] = useState<number | null>(null);
+  const todayDay = new Date().getDay();
+  const todayTemplateId = weeklyPlan[todayDay];
+  const todayTemplate = todayTemplateId ? templates.find(t => t.id === todayTemplateId) : null;
+
+  return (
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Plan semanal</p>
+        {todayTemplate && (
+          <button
+            onClick={() => onStartTemplate(todayTemplate)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--accent)] text-white text-xs font-medium rounded-[var(--r-md)] hover:opacity-90 transition-opacity"
+          >
+            <Dumbbell size={11} />
+            Empezar hoy
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-7 gap-1.5">
+        {WEEK_DAYS.map(({ num, label }) => {
+          const isToday = num === todayDay;
+          const templateId = weeklyPlan[num];
+          const templateName = templateId ? (templates.find(t => t.id === templateId)?.name ?? null) : null;
+
+          return (
+            <button
+              key={num}
+              onClick={() => setEditDay(num)}
+              className={`flex flex-col items-center gap-1 py-2 px-1 rounded-[var(--r-lg)] border transition-all ${
+                isToday
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/8'
+                  : 'border-[var(--border-subtle)] hover:border-[var(--border-default)] hover:bg-[var(--bg-hover)]'
+              }`}
+            >
+              <span className={`text-[10px] font-semibold ${isToday ? 'text-[var(--accent)]' : 'text-[var(--text-tertiary)]'}`}>
+                {label}
+              </span>
+              {templateName ? (
+                <span className="text-[8px] leading-tight text-center text-[var(--text-primary)] font-medium line-clamp-2 w-full px-0.5">
+                  {templateName}
+                </span>
+              ) : (
+                <span className="text-[8px] text-[var(--text-tertiary)]">—</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <Modal open={editDay !== null} onClose={() => setEditDay(null)} title="Asignar plantilla al día">
+        {editDay !== null && (
+          <div className="space-y-2">
+            <button
+              onClick={async () => { await setDayPlan(editDay, null); setEditDay(null); }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-lg)] border transition-colors text-left ${
+                !weeklyPlan[editDay] ? 'border-[var(--accent)] bg-[var(--accent)]/8' : 'border-[var(--border-subtle)] hover:bg-[var(--bg-hover)]'
+              }`}
+            >
+              <span className="text-sm text-[var(--text-secondary)]">Descanso / Sin asignar</span>
+              {!weeklyPlan[editDay] && <span className="ml-auto text-[10px] text-[var(--accent)] font-semibold">✓</span>}
+            </button>
+            {templates.map(t => (
+              <button
+                key={t.id}
+                onClick={async () => { await setDayPlan(editDay, t.id); setEditDay(null); }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-[var(--r-lg)] border transition-colors text-left ${
+                  weeklyPlan[editDay] === t.id
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/8'
+                    : 'border-[var(--border-subtle)] hover:bg-[var(--bg-hover)]'
+                }`}
+              >
+                <Dumbbell size={15} className="text-[var(--text-tertiary)] shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-[var(--text-primary)] truncate">{t.name}</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">~{t.estimatedMinutes}min · {t.exercises.length} ejercicios</p>
+                </div>
+                {weeklyPlan[editDay] === t.id && <span className="text-[10px] text-[var(--accent)] font-semibold shrink-0">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -32,6 +32,7 @@ export const STORAGE_KEYS = {
   tasks: 'tasks.v1',
   projects: 'tasks.projects.v1',
   goals: 'goals.v1',
+  workoutPlan: 'workouts.plan.v1',
   aiConfig: 'ai.config.v1',
   aiChatHistory: 'ai.history.v1',
   userProfile: 'user.profile.v1',

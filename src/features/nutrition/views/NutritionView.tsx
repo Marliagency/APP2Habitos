@@ -18,7 +18,6 @@ import {
   BodyWeightChart, MacroRatioChart,
 } from '../components/NutritionCharts';
 import { MealHistoryList } from '../components/MealHistoryList';
-import { RecentFoodsBar } from '../components/RecentFoodsBar';
 import { Button, Modal, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent } from '../../../shared/components/ui';
 import { MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
@@ -255,9 +254,6 @@ export default function NutritionView() {
               ))}
             </div>
 
-            {/* Recent foods quick-add */}
-            <RecentFoodsBar date={date} />
-
             {/* Meal cards */}
             <div className="space-y-3">
               {MEAL_TYPES.map(mealType => {
@@ -266,6 +262,7 @@ export default function NutritionView() {
                   <MealCard
                     key={meal.id}
                     meal={meal}
+                    currentDate={date}
                     onAddEntry={() => openAdd(mealType, 'photo')}
                   />
                 ) : isToday ? (
