@@ -11,6 +11,7 @@ import { fmt } from '../../../shared/utils/fmt';
 import { useHabitsStore }    from '../../habits/store/habitsStore';
 import { useWorkoutsStore }  from '../../workouts/store/workoutsStore';
 import { useNutritionStore } from '../../nutrition/store/nutritionStore';
+import { useNutritionTargets } from '../../nutrition/hooks/useNutritionTargets';
 import { useJournalStore }   from '../../journal/store/journalStore';
 import { useTasksStore }     from '../../tasks/store/tasksStore';
 import { EXERCISE_MAP }      from '../../workouts/data/exercises';
@@ -299,7 +300,8 @@ function StatCard({ label, value, sub, color = 'var(--accent)' }: {
 export default function AnalyticsView() {
   const { habits, entries: habitEntries, loaded: habitsLoaded, loadFromStorage: loadHabits } = useHabitsStore();
   const { workouts, loaded: workoutsLoaded, loadFromStorage: loadWorkouts } = useWorkoutsStore();
-  const { targets, getTotalsForDate, getBodyWeightTrend, loaded: nutritionLoaded, loadFromStorage: loadNutrition } = useNutritionStore();
+  const { getTotalsForDate, getBodyWeightTrend, loaded: nutritionLoaded, loadFromStorage: loadNutrition } = useNutritionStore();
+  const targets = useNutritionTargets();
   const { entries: journalEntries, loaded: journalLoaded, loadFromStorage: loadJournal, getMoodCalendar } = useJournalStore();
   const { tasks, loaded: tasksLoaded, loadFromStorage: loadTasks } = useTasksStore();
 

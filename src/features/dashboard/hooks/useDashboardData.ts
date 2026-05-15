@@ -4,6 +4,7 @@ import { useHabitsStore }    from '../../habits/store/habitsStore';
 import { useWorkoutsStore }  from '../../workouts/store/workoutsStore';
 import { useJournalStore }   from '../../journal/store/journalStore';
 import { useNutritionStore } from '../../nutrition/store/nutritionStore';
+import { useNutritionTargets } from '../../nutrition/hooks/useNutritionTargets';
 import { useTasksStore }     from '../../tasks/store/tasksStore';
 import {
   computeLifeScore,
@@ -19,6 +20,7 @@ export function useDashboardData() {
   const workoutsStore  = useWorkoutsStore();
   const journalStore   = useJournalStore();
   const nutritionStore = useNutritionStore();
+  const resolvedTargets = useNutritionTargets();
   const tasksStore     = useTasksStore();
 
   const { habits, entries } = habitsStore;
@@ -114,7 +116,7 @@ export function useDashboardData() {
     return Math.round(week.reduce((s, d) => s + d.habitsScore, 0) / week.length);
   }, [last30Days]);
 
-  const calorieTarget = nutritionStore.targets?.calories ?? null;
+  const calorieTarget = resolvedTargets?.calories ?? null;
 
   return {
     lifeScore,
