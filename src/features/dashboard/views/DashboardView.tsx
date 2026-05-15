@@ -19,6 +19,7 @@ import { WorkoutsSection }   from '../components/WorkoutsSection';
 import { Skeleton }          from '../../../shared/components/ui';
 import { MOOD_EMOJI, MOOD_COLOR, MOOD_LABELS } from '../../journal/types';
 import type { Mood } from '../../journal/types';
+import { fmt } from '../../../shared/utils/fmt';
 
 function DashboardSkeleton() {
   return (
@@ -151,7 +152,7 @@ function WeeklySummaryCard({
     },
     {
       label: 'Ánimo',
-      value: avgMood7d !== null ? `${Math.round(avgMood7d * 10) / 10}/5` : '–',
+      value: avgMood7d !== null ? `${fmt(avgMood7d, { decimals: 1 })}/5` : '–',
       sub: 'media 7d',
       color: moodColor,
     },
@@ -325,7 +326,7 @@ export default function DashboardView() {
           icon={<Target size={14} />}
           label="Objetivos"
           to="/goals"
-          sub={data.avgMood7d !== null ? `Ánimo: ${Math.round(data.avgMood7d * 10) / 10}/5` : 'Configura tu objetivo'}
+          sub={data.avgMood7d !== null ? `Ánimo: ${fmt(data.avgMood7d, { decimals: 1 })}/5` : 'Configura tu objetivo'}
           accent="var(--accent)"
         />
       </div>

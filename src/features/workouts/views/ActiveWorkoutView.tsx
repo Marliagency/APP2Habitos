@@ -10,6 +10,7 @@ import { InlineRestTimer } from '../components/RestTimer';
 import { useRestTimer } from '../hooks/useRestTimer';
 import { Button, Modal } from '../../../shared/components/ui';
 import { calcTotalVolume } from '../types';
+import { fmt } from '../../../shared/utils/fmt';
 
 export default function ActiveWorkoutView() {
   const navigate = useNavigate();
@@ -77,7 +78,7 @@ export default function ActiveWorkoutView() {
             <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
               <span className="flex items-center gap-1"><Timer size={10} />{formatElapsed(elapsedSeconds)}</span>
               <span>{completedSets}/{totalSets} sets</span>
-              <span>{Math.round(totalVolume)}kg vol.</span>
+              <span>{fmt(totalVolume, { integer: true })}kg vol.</span>
             </div>
           </div>
           <Button variant="primary" size="sm" onClick={() => setShowFinishModal(true)}>
@@ -225,7 +226,7 @@ export default function ActiveWorkoutView() {
               <p className="text-xs text-[var(--text-tertiary)]">Sets completados</p>
             </div>
             <div className="bg-[var(--bg-base)] rounded-[var(--r-lg)] p-3">
-              <p className="text-lg font-bold text-[var(--text-primary)]">{Math.round(totalVolume)}</p>
+              <p className="text-lg font-bold text-[var(--text-primary)]">{fmt(totalVolume, { integer: true })}</p>
               <p className="text-xs text-[var(--text-tertiary)]">Volumen (kg)</p>
             </div>
           </div>

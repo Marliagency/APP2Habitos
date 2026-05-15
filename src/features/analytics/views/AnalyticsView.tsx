@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine,
 } from 'recharts';
 import { BarChart2, Trophy, TrendingUp, Scale, Flame, Brain, Activity } from 'lucide-react';
+import { fmt } from '../../../shared/utils/fmt';
 import { useHabitsStore }    from '../../habits/store/habitsStore';
 import { useWorkoutsStore }  from '../../workouts/store/workoutsStore';
 import { useNutritionStore } from '../../nutrition/store/nutritionStore';
@@ -137,7 +138,7 @@ function WeightForecastChart({ data }: { data: { date: string; label: string; we
           <CartesianGrid stroke="var(--border-subtle)" strokeDasharray="3 3" vertical={false} />
           <XAxis dataKey="label" tick={TICK_PROPS} tickLine={false} axisLine={false} interval="preserveStartEnd" />
           <YAxis tick={TICK_PROPS} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
-          <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [`${v.toFixed(1)} kg`]} />
+          <Tooltip contentStyle={TOOLTIP_STYLE} formatter={(v: number) => [`${fmt(v, { decimals: 1 })} kg`]} />
           <Area type="monotone" dataKey="weight"   stroke="var(--accent)"  fill="var(--accent)"  fillOpacity={0.15} strokeWidth={2} dot={false} connectNulls />
           <Area type="monotone" dataKey="forecast" stroke="var(--warning)" fill="var(--warning)" fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls />
         </AreaChart>
@@ -174,7 +175,7 @@ function PRTimeline({ prs }: { prs: PREntry[] }) {
                   <p className="text-[10px] text-[var(--text-tertiary)]">{pr.label} · {pr.type}</p>
                 </div>
                 <span className="text-sm font-bold text-[var(--warning)] shrink-0">
-                  {pr.value.toFixed(pr.type === '1RM' ? 1 : 0)}{pr.type === 'reps' ? ' reps' : ' kg'}
+                  {fmt(pr.value, { decimals: pr.type === '1RM' ? 1 : 0 })}{pr.type === 'reps' ? ' reps' : ' kg'}
                 </span>
               </div>
             </div>
@@ -487,7 +488,7 @@ export default function AnalyticsView() {
       totalVolume:  Math.round(totalVolume / 1000),
       avgCalories:  avgCalories > 0 ? Math.round(avgCalories) : null,
       tasksDone,
-      avgMood:      avgMoodRaw > 0 ? avgMoodRaw.toFixed(1) : null,
+      avgMood:      avgMoodRaw > 0 ? fmt(avgMoodRaw, { decimals: 1 }) : null,
       journalDays:  new Set(journalEntries.filter(e => e.date >= cutoff).map(e => e.date)).size,
     };
   }, [workouts, last14Days, tasks, journalEntries]);
