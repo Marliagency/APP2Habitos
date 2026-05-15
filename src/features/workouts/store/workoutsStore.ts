@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { format } from 'date-fns';
-import type { Exercise, Workout, WorkoutExercise, ExerciseSet, WorkoutTemplate } from '../types';
+import type { Exercise, Workout, WorkoutExercise, ExerciseSet, WorkoutTemplate, WeeklyPlan, DayPlan } from '../types';
 import { calc1RM, calcTotalVolume } from '../types';
 import { storage, STORAGE_KEYS } from '../../../shared/lib/storage';
 import { EXERCISES } from '../data/exercises';
@@ -16,7 +16,9 @@ interface WorkoutsState {
   exercises: Exercise[];
   workouts: Workout[];
   templates: WorkoutTemplate[];
-  weeklyPlan: Record<number, string | null>; // 0=Sun … 6=Sat → templateId
+  weeklyPlan: Record<number, string | null>; // legacy simple plan
+  weeklyPlans: WeeklyPlan[];
+  activePlanId: string | null;
   activeWorkout: Workout | null;
   loaded: boolean;
 
@@ -42,8 +44,14 @@ interface WorkoutsState {
   getVolumeByWeek: () => { week: string; volume: number }[];
   getWorkoutsByMonth: () => { date: string; count: number }[];
 
-  // Weekly plan
+  // Legacy simple plan
   setDayPlan: (day: number, templateId: string | null) => Promise<void>;
+
+  // Named weekly plans
+  createWeeklyPlan: (data: { name: string; days: DayPlan[] }) => Promise<WeeklyPlan>;
+  updateDayPlan: (planId: string, dayOfWeek: number, patch: Partial<DayPlan>) => Promise<void>;
+  setActivePlan: (planId: string | null) => Promise<void>;
+  deleteWeeklyPlan: (planId: string) => Promise<void>;
 
   // User templates
   saveAsTemplate: (workout: Workout) => Promise<WorkoutTemplate>;
@@ -58,21 +66,27 @@ export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
   workouts: [],
   templates: WORKOUT_TEMPLATES,
   weeklyPlan: {},
+  weeklyPlans: [],
+  activePlanId: null,
   activeWorkout: null,
   loaded: false,
 
   loadFromStorage: async () => {
-    const [workouts, customExercises, userTemplates, weeklyPlan] = await Promise.all([
+    const [workouts, customExercises, userTemplates, weeklyPlan, weeklyPlans, activePlanId] = await Promise.all([
       storage.getItem<Workout[]>(STORAGE_KEYS.workouts),
       storage.getItem<Exercise[]>(STORAGE_KEYS.exercises),
       storage.getItem<WorkoutTemplate[]>(STORAGE_KEYS.workoutTemplates),
       storage.getItem<Record<number, string | null>>(STORAGE_KEYS.workoutPlan),
+      storage.getItem<WeeklyPlan[]>(STORAGE_KEYS.weeklyPlans),
+      storage.getItem<string>(STORAGE_KEYS.activeWeeklyPlanId),
     ]);
     set({
       workouts:    workouts ?? [],
       exercises:   [...EXERCISES, ...(customExercises ?? [])],
       templates:   [...(userTemplates ?? []), ...WORKOUT_TEMPLATES],
       weeklyPlan:  weeklyPlan ?? {},
+      weeklyPlans: weeklyPlans ?? [],
+      activePlanId: activePlanId ?? null,
       loaded:      true,
     });
   },
@@ -274,6 +288,40 @@ export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
     const plan = { ...get().weeklyPlan, [day]: templateId };
     set({ weeklyPlan: plan });
     await storage.setItem(STORAGE_KEYS.workoutPlan, plan);
+  },
+
+  createWeeklyPlan: async ({ name, days }) => {
+    const plan: WeeklyPlan = { id: uid(), name, days, createdAt: new Date().toISOString() };
+    const updated = [...get().weeklyPlans, plan];
+    set({ weeklyPlans: updated });
+    await storage.setItem(STORAGE_KEYS.weeklyPlans, updated);
+    return plan;
+  },
+
+  updateDayPlan: async (planId, dayOfWeek, patch) => {
+    const updated = get().weeklyPlans.map(p => {
+      if (p.id !== planId) return p;
+      const days = p.days.map(d => d.dayOfWeek === dayOfWeek ? { ...d, ...patch } : d);
+      const hasDay = p.days.some(d => d.dayOfWeek === dayOfWeek);
+      return { ...p, days: hasDay ? days : [...p.days, { dayOfWeek, templateId: null, ...patch } as DayPlan] };
+    });
+    set({ weeklyPlans: updated });
+    await storage.setItem(STORAGE_KEYS.weeklyPlans, updated);
+  },
+
+  setActivePlan: async (planId) => {
+    set({ activePlanId: planId });
+    await storage.setItem(STORAGE_KEYS.activeWeeklyPlanId, planId);
+  },
+
+  deleteWeeklyPlan: async (planId) => {
+    const updated = get().weeklyPlans.filter(p => p.id !== planId);
+    const activePlanId = get().activePlanId === planId ? null : get().activePlanId;
+    set({ weeklyPlans: updated, activePlanId });
+    await Promise.all([
+      storage.setItem(STORAGE_KEYS.weeklyPlans, updated),
+      storage.setItem(STORAGE_KEYS.activeWeeklyPlanId, activePlanId),
+    ]);
   },
 
   saveAsTemplate: async (workout) => {

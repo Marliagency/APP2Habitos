@@ -263,7 +263,6 @@ export default function NutritionView() {
                     key={meal.id}
                     meal={meal}
                     currentDate={date}
-                    onAddEntry={() => openAdd(mealType, 'photo')}
                   />
                 ) : isToday ? (
                   <button

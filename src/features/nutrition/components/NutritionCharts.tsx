@@ -57,7 +57,8 @@ export function CaloriesWeekChart({ store }: { store: StoreProps }) {
           <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>kcal media</span>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={160}>
+      <div style={{ width: '100%', height: 160, overflow: 'hidden', position: 'relative' }}>
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barCategoryGap="28%">
           <CartesianGrid {...CHART_THEME.grid} />
           <XAxis dataKey="label" {...CHART_THEME.axis} />
@@ -79,6 +80,7 @@ export function CaloriesWeekChart({ store }: { store: StoreProps }) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -139,7 +141,8 @@ export function CaloriesMonthChart({ store }: { store: StoreProps }) {
           )}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={180}>
+      <div style={{ width: '100%', height: 180, overflow: 'hidden', position: 'relative' }}>
+      <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data}>
           <defs>
             <linearGradient id="calGrad" x1="0" y1="0" x2="0" y2="1">
@@ -158,6 +161,7 @@ export function CaloriesMonthChart({ store }: { store: StoreProps }) {
           <Area type="monotone" dataKey="calories" stroke={COLOR} strokeWidth={2} fill="url(#calGrad)" dot={false} name="Calorías" />
         </AreaChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -193,7 +197,8 @@ export function MacroSplitChart({ store }: { store: StoreProps }) {
           ))}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={160}>
+      <div style={{ width: '100%', height: 160, overflow: 'hidden', position: 'relative' }}>
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barCategoryGap="25%" barGap={2}>
           <CartesianGrid {...CHART_THEME.grid} />
           <XAxis dataKey="label" {...CHART_THEME.axis} />
@@ -204,6 +209,7 @@ export function MacroSplitChart({ store }: { store: StoreProps }) {
           <Bar dataKey="fat"     fill={FAT_COLOR}     radius={[3, 3, 0, 0]} name="Grasas" />
         </BarChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -240,7 +246,8 @@ export function BodyWeightChart({ bodyWeight }: { bodyWeight: BodyWeightEntry[] 
           )}
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={150}>
+      <div style={{ width: '100%', height: 150, overflow: 'hidden', position: 'relative' }}>
+      <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <CartesianGrid {...CHART_THEME.grid} />
           <XAxis dataKey="label" {...CHART_THEME.axis} interval="preserveStartEnd" />
@@ -249,6 +256,7 @@ export function BodyWeightChart({ bodyWeight }: { bodyWeight: BodyWeightEntry[] 
           <Line type="monotone" dataKey="weight" stroke={PROTEIN_COLOR} strokeWidth={2} dot={{ fill: PROTEIN_COLOR, r: 3 }} name="Peso" />
         </LineChart>
       </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -274,7 +282,8 @@ export function MacroRatioChart({ store }: { store: StoreProps }) {
         <span className="footnote" style={{ color: 'var(--text-secondary)' }}>{fmtKcal(t.calories)}</span>
       </div>
       <div className="flex items-center gap-4">
-        <ResponsiveContainer width={120} height={120}>
+        <div style={{ width: 120, height: 120, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={data} dataKey="value" cx="50%" cy="50%" innerRadius={32} outerRadius={52} strokeWidth={0}>
               {data.map((entry, i) => (
@@ -283,6 +292,7 @@ export function MacroRatioChart({ store }: { store: StoreProps }) {
             </Pie>
           </PieChart>
         </ResponsiveContainer>
+        </div>
         <div className="space-y-2 flex-1">
           {[
             { label: 'Proteínas', value: t.protein, unit: 'g', color: PROTEIN_COLOR, target: store.targets?.protein },

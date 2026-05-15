@@ -149,6 +149,19 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   cardio:      'Cardio',
 };
 
+// Weekly plan types
+export interface DayPlan {
+  dayOfWeek: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  templateId: string | null;
+}
+
+export interface WeeklyPlan {
+  id: string;
+  name: string;
+  days: DayPlan[];
+  createdAt: string;
+}
+
 export const EQUIPMENT_LABELS: Record<Exercise['equipment'], string> = {
   barbell:    'Barra',
   dumbbell:   'Mancuernas',

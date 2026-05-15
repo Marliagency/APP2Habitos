@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, Trash2, Plus } from 'lucide-react';
 import { MacroBadges } from './DailyRings';
 import { RecentFoodsBar } from './RecentFoodsBar';
+import { AddFoodSheet } from './AddFoodSheet';
 import { useNutritionStore } from '../store/nutritionStore';
 import { sumMacros, MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
@@ -9,11 +10,11 @@ import type { Meal } from '../types';
 interface MealCardProps {
   meal: Meal;
   currentDate: string;
-  onAddEntry: () => void;
 }
 
-export function MealCard({ meal, currentDate, onAddEntry }: MealCardProps) {
+export function MealCard({ meal, currentDate }: MealCardProps) {
   const [open, setOpen] = useState(true);
+  const [showAddSheet, setShowAddSheet] = useState(false);
   const { removeEntry, deleteMeal } = useNutritionStore();
   const totals = sumMacros(meal.entries);
 
@@ -74,7 +75,7 @@ export function MealCard({ meal, currentDate, onAddEntry }: MealCardProps) {
           {/* Actions */}
           <div className="flex gap-2 px-3 py-2 border-t border-[var(--border-subtle)]">
             <button
-              onClick={onAddEntry}
+              onClick={() => setShowAddSheet(true)}
               className="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-[var(--r-md)] transition-colors border border-dashed border-[var(--border-default)]"
             >
               <Plus size={12} /> Añadir alimento
@@ -90,6 +91,14 @@ export function MealCard({ meal, currentDate, onAddEntry }: MealCardProps) {
           </div>
         </div>
       )}
+
+      <AddFoodSheet
+        open={showAddSheet}
+        onClose={() => setShowAddSheet(false)}
+        mealId={meal.id}
+        mealType={meal.type}
+        date={currentDate}
+      />
     </div>
   );
 }
