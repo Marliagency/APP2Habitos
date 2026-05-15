@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -19,7 +19,8 @@ export default function BodyMetricsView() {
   const [input, setInput]     = useState('');
   const [note, setNote]       = useState('');
 
-  if (!loaded) { loadFromStorage(); return null; }
+  useEffect(() => { if (!loaded) loadFromStorage(); }, [loaded, loadFromStorage]);
+  if (!loaded) return null;
 
   const sorted  = [...bodyWeight].sort((a, b) => a.date.localeCompare(b.date));
   const last    = sorted[sorted.length - 1];
