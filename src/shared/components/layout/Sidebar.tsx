@@ -5,16 +5,17 @@ import {
   Bot, BarChart2, Settings, Home, LayoutDashboard, Target
 } from 'lucide-react';
 import clsx from 'clsx';
+import { QyroLogo } from '../ui/QyroLogo';
 
 const navItems: { to: string; icon: LucideIcon; label: string; color?: string; end?: boolean }[] = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
   { to: '/today', icon: Home, label: 'Hoy' },
-  { to: '/habits', icon: CheckSquare, label: 'Hábitos', color: 'var(--habit-color)' },
-  { to: '/workouts', icon: Dumbbell, label: 'Entrenamientos', color: 'var(--workout-color)' },
-  { to: '/nutrition', icon: Apple, label: 'Nutrición', color: 'var(--nutrition-color)' },
-  { to: '/journal', icon: BookOpen, label: 'Diario', color: 'var(--journal-color)' },
-  { to: '/tasks', icon: ListTodo, label: 'Tareas', color: 'var(--task-color)' },
-  { to: '/goals', icon: Target, label: 'Objetivos', color: 'var(--accent)' },
+  { to: '/habits', icon: CheckSquare, label: 'Hábitos', color: 'var(--c-habits)' },
+  { to: '/workouts', icon: Dumbbell, label: 'Entrenamientos', color: 'var(--c-workouts)' },
+  { to: '/nutrition', icon: Apple, label: 'Nutrición', color: 'var(--c-nutrition)' },
+  { to: '/journal', icon: BookOpen, label: 'Diario', color: 'var(--c-journal)' },
+  { to: '/tasks', icon: ListTodo, label: 'Tareas', color: 'var(--c-tasks)' },
+  { to: '/goals', icon: Target, label: 'Objetivos', color: 'var(--c-goals)' },
 ];
 
 const bottomItems: { to: string; icon: LucideIcon; label: string }[] = [
@@ -25,16 +26,14 @@ const bottomItems: { to: string; icon: LucideIcon; label: string }[] = [
 
 export function Sidebar() {
   return (
-    <nav className="flex flex-col h-full w-full bg-[var(--bg-surface)] border-r border-[var(--border-subtle)] py-4">
-      <div className="px-4 mb-6">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[var(--accent)] rounded-[var(--r-md)] flex items-center justify-center">
-            <span className="text-white text-xs font-bold">A2</span>
-          </div>
-          <span className="text-sm font-semibold text-[var(--text-primary)]">APP2Habitos</span>
-        </div>
+    <nav className="flex flex-col h-full w-full bg-[var(--bg-surface)] border-r border-[var(--border-subtle)]">
+      {/* Brand header */}
+      <div className="px-4 py-5 border-b border-[var(--border-subtle)]">
+        <QyroLogo size={28} showText textSize="md" />
       </div>
-      <div className="flex-1 px-2 space-y-0.5">
+
+      {/* Main nav */}
+      <div className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
         {navItems.map(({ to, icon: Icon, label, color, end }) => (
           <NavLink
             key={to}
@@ -42,32 +41,37 @@ export function Sidebar() {
             end={end}
             className={({ isActive }) =>
               clsx(
-                'flex items-center gap-2.5 px-3 py-2 rounded-[var(--r-md)] text-sm transition-all duration-150',
+                'flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-md)] text-sm font-medium transition-all duration-150 min-h-[40px]',
                 isActive
-                  ? 'bg-[var(--bg-selected)] text-[var(--text-primary)] font-medium'
+                  ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
               )
             }
           >
             {({ isActive }) => (
               <>
-                <Icon size={16} style={{ color: isActive && color ? color : undefined }} />
+                <Icon
+                  size={16}
+                  style={{ color: isActive ? (color ?? 'var(--accent)') : undefined }}
+                />
                 <span>{label}</span>
               </>
             )}
           </NavLink>
         ))}
       </div>
-      <div className="px-2 space-y-0.5 border-t border-[var(--border-subtle)] pt-2 mt-2">
+
+      {/* Bottom items */}
+      <div className="px-2 py-2 space-y-0.5 border-t border-[var(--border-subtle)]">
         {bottomItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
             className={({ isActive }) =>
               clsx(
-                'flex items-center gap-2.5 px-3 py-2 rounded-[var(--r-md)] text-sm transition-all duration-150',
+                'flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--r-md)] text-sm font-medium transition-all duration-150 min-h-[40px]',
                 isActive
-                  ? 'bg-[var(--bg-selected)] text-[var(--text-primary)] font-medium'
+                  ? 'bg-[var(--accent-subtle)] text-[var(--accent)] font-semibold'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'
               )
             }

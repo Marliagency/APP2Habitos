@@ -1,4 +1,5 @@
 export { Button } from './Button';
+export { QyroLogo } from './QyroLogo';
 export { Spinner } from './Spinner';
 export { Input } from './Input';
 export { Textarea } from './Textarea';

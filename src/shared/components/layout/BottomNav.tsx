@@ -4,7 +4,7 @@ import { LayoutDashboard, Sun, Dumbbell, Apple, Target } from 'lucide-react';
 import clsx from 'clsx';
 
 const navItems: { to: string; icon: LucideIcon; label: string; end?: boolean }[] = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', end: true },
+  { to: '/', icon: LayoutDashboard, label: 'Inicio', end: true },
   { to: '/today', icon: Sun, label: 'Hoy' },
   { to: '/workouts', icon: Dumbbell, label: 'Entrenos' },
   { to: '/nutrition', icon: Apple, label: 'Nutrición' },
@@ -14,8 +14,8 @@ const navItems: { to: string; icon: LucideIcon; label: string; end?: boolean }[]
 export function BottomNav() {
   return (
     <nav
-      className="flex items-end bg-[var(--bg-surface)]/90 backdrop-blur-md border-t border-[var(--border-subtle)]"
-      style={{ paddingBottom: 'max(var(--safe-bottom), 8px)' }}
+      className="flex items-end bg-[var(--bg-surface)]/95 backdrop-blur-xl border-t border-[var(--border-subtle)]"
+      style={{ paddingBottom: 'max(var(--safe-bottom), 6px)' }}
     >
       {navItems.map(({ to, icon: Icon, label, end }) => (
         <NavLink
@@ -24,14 +24,28 @@ export function BottomNav() {
           end={end}
           className={({ isActive }) =>
             clsx(
-              'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[44px]',
-              'transition-colors duration-150',
-              isActive ? 'text-[var(--accent)]' : 'text-[var(--text-tertiary)]'
+              'flex-1 flex flex-col items-center justify-center gap-0.5 pt-2 pb-1',
+              'transition-all duration-150',
+              isActive
+                ? 'text-[var(--accent)]'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             )
           }
         >
-          <Icon size={22} strokeWidth={1.75} />
-          <span className="text-[10px]">{label}</span>
+          {({ isActive }) => (
+            <>
+              <div className="relative">
+                <Icon size={22} strokeWidth={isActive ? 2.25 : 1.75} />
+                {isActive && (
+                  <span
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
+                    style={{ background: 'var(--qyro-grad)' }}
+                  />
+                )}
+              </div>
+              <span className="text-[9px] font-semibold tracking-wide uppercase mt-0.5">{label}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>
