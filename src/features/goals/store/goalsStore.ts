@@ -1,9 +1,7 @@
 import { create } from 'zustand';
 import type { LifeGoal, LifeIntent, BodyProfile, TimeBudget, PriorityArea } from '../types';
 import { inferGoalTargets } from '../utils/goalInference';
-import { storage } from '../../../shared/lib/storage';
-
-const GOALS_KEY = 'goals.v1';
+import { storage, STORAGE_KEYS } from '../../../shared/lib/storage';
 const uid  = () => crypto.randomUUID();
 const now  = () => new Date().toISOString();
 
@@ -26,7 +24,7 @@ export const useGoalsStore = create<GoalsState>((set) => ({
   loaded: false,
 
   loadFromStorage: async () => {
-    const goal = await storage.getItem<LifeGoal>(GOALS_KEY);
+    const goal = await storage.getItem<LifeGoal>(STORAGE_KEYS.goals);
     set({ goal: goal ?? null, loaded: true });
   },
 
@@ -44,12 +42,12 @@ export const useGoalsStore = create<GoalsState>((set) => ({
       active:      true,
     };
     set({ goal });
-    await storage.setItem(GOALS_KEY, goal);
+    await storage.setItem(STORAGE_KEYS.goals, goal);
     return goal;
   },
 
   clearGoal: async () => {
     set({ goal: null });
-    await storage.removeItem(GOALS_KEY);
+    await storage.removeItem(STORAGE_KEYS.goals);
   },
 }));
