@@ -7,6 +7,7 @@ import {
   Button, EmptyState, Modal, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent,
 } from '../../../shared/components/ui';
 import { useWorkouts } from '../hooks/useWorkouts';
+import { fmt } from '../../../shared/utils/fmt';
 import { PlateCalculator } from '../components/PlateCalculator';
 import { WORKOUT_TEMPLATES } from '../data/templates';
 import { EXERCISE_MAP } from '../data/exercises';
@@ -172,7 +173,7 @@ function WorkoutsHome() {
                           <span className="text-xs text-[var(--text-tertiary)]">{w.durationMinutes}min</span>
                         )}
                         {w.totalVolume > 0 && (
-                          <span className="text-xs text-[var(--text-tertiary)]">{Math.round(w.totalVolume)}kg vol.</span>
+                          <span className="text-xs text-[var(--text-tertiary)]">{fmt(w.totalVolume, { integer: true })}kg vol.</span>
                         )}
                         <span className="text-xs text-[var(--text-tertiary)]">
                           {w.exercises.reduce((s, e) => s + e.sets.filter(st => st.completed).length, 0)} sets
@@ -230,7 +231,7 @@ function WorkoutsHome() {
                 <StatCard label="Total sesiones" value={String(workouts.length)} />
                 <StatCard
                   label="Volumen total"
-                  value={`${Math.round(workouts.reduce((s, w) => s + w.totalVolume, 0) / 1000)}t`}
+                  value={`${fmt(workouts.reduce((s, w) => s + w.totalVolume, 0) / 1000, { decimals: 1 })}t`}
                 />
                 <StatCard
                   label="PRs"

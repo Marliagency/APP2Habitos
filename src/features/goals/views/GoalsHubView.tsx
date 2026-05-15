@@ -10,6 +10,7 @@ import { evaluateGoalProgress } from '../utils/goalInference';
 import { INTENT_LABELS, INTENT_EMOJIS, PRIORITY_LABELS, PRIORITY_EMOJIS } from '../types';
 import { Button, EmptyState, Skeleton } from '../../../shared/components/ui';
 import { useToast } from '../../../shared/components/ui';
+import { fmt } from '../../../shared/utils/fmt';
 import { format, subDays } from 'date-fns';
 
 function ScoreBadge({ score }: { score: number }) {
@@ -24,19 +25,6 @@ function ScoreBadge({ score }: { score: number }) {
   );
 }
 
-function ProgressRow({
-  icon,
-  label,
-  ok,
-}: { icon: React.ReactNode; label: string; ok: boolean }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className={`shrink-0 ${ok ? 'text-[var(--success)]' : 'text-[var(--danger)]'}`}>{icon}</div>
-      <span className="text-xs text-[var(--text-secondary)] flex-1">{label}</span>
-      <CheckCircle2 size={13} className={ok ? 'text-[var(--success)]' : 'text-[var(--text-tertiary)] opacity-30'} />
-    </div>
-  );
-}
 
 export default function GoalsHubView() {
   const navigate  = useNavigate();
@@ -199,43 +187,60 @@ export default function GoalsHubView() {
       </div>
 
       {/* Targets */}
-      <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: 'Calorías objetivo',  val: `${goal.derived.calorieTarget} kcal`, icon: <Utensils size={13} />, color: 'var(--warning)' },
-          { label: 'Proteína diaria',    val: `${goal.derived.proteinG}g`,           icon: <TrendingUp size={13} />, color: 'var(--accent)' },
-          { label: 'Entrenos / semana',  val: `${goal.derived.workoutDaysPerWeek}×`, icon: <Dumbbell size={13} />, color: 'var(--success)' },
-          { label: 'Estilo de entreno',  val: goal.derived.workoutType,              icon: <Zap size={13} />, color: 'var(--text-secondary)' },
-        ].map(({ label, val, icon, color }) => (
-          <div key={label} className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3">
-            <div className="flex items-center gap-1.5 mb-1.5" style={{ color }}>
-              {icon}
-              <span className="text-[10px] text-[var(--text-tertiary)]">{label}</span>
+      <div className="section-group">
+        <p className="section-header">Parámetros del objetivo</p>
+        <div className="section-body">
+          {[
+            { label: 'Calorías objetivo',  val: `${fmt(goal.derived.calorieTarget, { integer: true })} kcal`, icon: <Utensils size={14} />, color: 'var(--warning)' },
+            { label: 'Proteína diaria',    val: `${fmt(goal.derived.proteinG, { integer: true })} g`,          icon: <TrendingUp size={14} />, color: 'var(--accent)' },
+            { label: 'Entrenos / semana',  val: `${goal.derived.workoutDaysPerWeek} sesiones`,                  icon: <Dumbbell size={14} />, color: '#34c759' },
+            { label: 'Estilo de entreno',  val: goal.derived.workoutType,                                       icon: <Zap size={14} />, color: 'var(--text-tertiary)' },
+          ].map(({ label, val, icon, color }) => (
+            <div key={label} className="section-row">
+              <div className="section-row-icon" style={{ background: `${color}18`, color }}>
+                {icon}
+              </div>
+              <div className="section-row-content">
+                <span className="section-row-label">{label}</span>
+                <span className="section-row-value" style={{ color, fontWeight: 600 }}>{val}</span>
+              </div>
             </div>
-            <p className="text-sm font-semibold text-[var(--text-primary)] truncate">{val}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Weekly progress */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-        <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-3">Progreso esta semana</p>
-        <div className="space-y-3">
-          <ProgressRow icon={<Utensils size={13} />} label={`Nutrición — ${avgCalories !== null ? Math.round(avgCalories) : '–'} kcal/día media`} ok={progress.nutritionOk} />
-          <ProgressRow icon={<Dumbbell size={13} />} label={`Entrenos — ${workoutsThisWeek} de ${goal.derived.workoutDaysPerWeek} sesiones`} ok={progress.workoutOk} />
-          <ProgressRow icon={<ListTodo size={13} />} label={`Hábitos — ${Math.round(habitPct)}% de cumplimiento`} ok={progress.habitsOk} />
-          <ProgressRow icon={<Brain size={13} />}    label={`Estado de ánimo — ${avgMood !== null ? Math.round(avgMood * 10) / 10 : '–'}/5 media`} ok={progress.moodOk} />
+      <div className="section-group">
+        <p className="section-header">Progreso esta semana</p>
+        <div className="section-body">
+          {[
+            { icon: <Utensils size={14} />, label: `Nutrición — ${avgCalories !== null ? fmt(avgCalories, { integer: true }) : '–'} kcal/día`, ok: progress.nutritionOk, color: 'var(--warning)' },
+            { icon: <Dumbbell size={14} />, label: `Entrenos — ${workoutsThisWeek} de ${goal.derived.workoutDaysPerWeek} sesiones`, ok: progress.workoutOk, color: '#34c759' },
+            { icon: <ListTodo size={14} />, label: `Hábitos — ${fmt(habitPct, { integer: true })}% cumplimiento`, ok: progress.habitsOk, color: 'var(--accent)' },
+            { icon: <Brain size={14} />,    label: `Ánimo — ${avgMood !== null ? fmt(avgMood, { decimals: 1 }) : '–'}/5 media`, ok: progress.moodOk, color: '#af52de' },
+          ].map(({ icon, label, ok, color }) => (
+            <div key={label} className="section-row">
+              <div className="section-row-icon" style={{ background: ok ? `${color}18` : 'var(--bg-hover)', color: ok ? color : 'var(--text-tertiary)' }}>
+                {icon}
+              </div>
+              <div className="section-row-content">
+                <span className="section-row-label">{label}</span>
+                <CheckCircle2 size={15} style={{ color: ok ? 'var(--success)' : 'var(--text-tertiary)', opacity: ok ? 1 : 0.3, flexShrink: 0 }} />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Smart adjustments */}
       {progress.adjustments.length > 0 && (
-        <div className="bg-[var(--warning)]/10 border border-[var(--warning)]/20 rounded-[var(--r-xl)] p-4">
-          <p className="text-xs font-semibold text-[var(--warning)] mb-2.5">Ajustes sugeridos</p>
-          <div className="space-y-2">
+        <div className="section-group">
+          <p className="section-header" style={{ color: 'var(--warning)' }}>Ajustes sugeridos</p>
+          <div className="section-body">
             {progress.adjustments.map((adj, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs text-[var(--text-secondary)]">
-                <span className="text-[var(--warning)] shrink-0">→</span>
-                <span>{adj}</span>
+              <div key={i} className="px-4 py-2.5 flex items-start gap-2">
+                <span className="text-[var(--warning)] shrink-0 mt-0.5">→</span>
+                <span className="text-sm text-[var(--text-secondary)]">{adj}</span>
               </div>
             ))}
           </div>
@@ -243,25 +248,26 @@ export default function GoalsHubView() {
       )}
 
       {/* Habit suggestions */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-        <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">Hábitos recomendados</p>
-        <div className="space-y-2">
+      <div className="section-group">
+        <p className="section-header">Hábitos recomendados</p>
+        <div className="section-body">
           {goal.derived.habitSuggestions.slice(0, 5).map((h, i) => {
             const alreadyAdded = habits.some(hab => hab.name === h);
             return (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-[var(--accent)] shrink-0">✓</span>
-                <span className="text-xs text-[var(--text-secondary)] flex-1">{h}</span>
-                {alreadyAdded ? (
-                  <span className="text-[10px] text-[var(--success)] shrink-0 font-medium">Añadido</span>
-                ) : (
-                  <button
-                    onClick={() => handleAddHabit(h)}
-                    className="shrink-0 px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-medium rounded-[var(--r-md)] hover:bg-[var(--accent)]/20 transition-colors"
-                  >
-                    Añadir
-                  </button>
-                )}
+              <div key={i} className="section-row">
+                <div className="section-row-content">
+                  <span className="section-row-label">{h}</span>
+                  {alreadyAdded ? (
+                    <span className="text-[10px] text-[var(--success)] font-medium shrink-0">Añadido ✓</span>
+                  ) : (
+                    <button
+                      onClick={() => handleAddHabit(h)}
+                      className="shrink-0 px-2.5 py-1 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-medium rounded-[var(--r-md)] hover:bg-[var(--accent)]/20 transition-colors"
+                    >
+                      Añadir
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -269,24 +275,29 @@ export default function GoalsHubView() {
       </div>
 
       {/* Journal prompts */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-        <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">Preguntas de reflexión</p>
-        <div className="space-y-2">
+      <div className="section-group">
+        <p className="section-header">Preguntas de reflexión</p>
+        <div className="section-body">
           {goal.derived.journalPrompts.map((p, i) => (
-            <p key={i} className="text-xs text-[var(--text-secondary)] pl-2 border-l-2 border-[var(--accent)]/30">{p}</p>
+            <div key={i} className="px-4 py-2.5 border-l-2 mx-4 rounded-sm mb-1" style={{ borderColor: 'var(--accent)', background: 'var(--bg-base)' }}>
+              <p className="text-sm text-[var(--text-secondary)]">{p}</p>
+            </div>
           ))}
         </div>
       </div>
 
       {/* Priorities */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-        <p className="text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">Áreas prioritarias</p>
-        <div className="flex flex-wrap gap-2">
-          {goal.priorities.map(p => (
-            <span key={p} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--accent)]/10 text-xs text-[var(--accent)] font-medium">
-              {PRIORITY_EMOJIS[p]} {PRIORITY_LABELS[p]}
-            </span>
-          ))}
+      <div className="section-group">
+        <p className="section-header">Áreas prioritarias</p>
+        <div className="section-body">
+          <div className="px-4 py-3 flex flex-wrap gap-2">
+            {goal.priorities.map(p => (
+              <span key={p} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+                style={{ background: 'var(--accent)18', color: 'var(--accent)' }}>
+                {PRIORITY_EMOJIS[p]} {PRIORITY_LABELS[p]}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 

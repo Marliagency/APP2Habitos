@@ -1,5 +1,6 @@
 import { Flame, Award, Target, TrendingUp } from 'lucide-react';
 import { ProgressBar } from '../../../shared/components/ui';
+import { fmt } from '../../../shared/utils/fmt';
 import type { HabitStats } from '../types';
 
 interface HabitStatsProps {
@@ -25,13 +26,13 @@ export function HabitStatsDisplay({ stats, color }: HabitStatsProps) {
         <StatCard
           icon={<Target size={14} />}
           label="Últimos 7 días"
-          value={`${Math.round(stats.completionRate7d * 100)}%`}
+          value={`${fmt(stats.completionRate7d * 100, { integer: true })}%`}
           iconColor={color}
         />
         <StatCard
           icon={<TrendingUp size={14} />}
           label="Últimos 30 días"
-          value={`${Math.round(stats.completionRate30d * 100)}%`}
+          value={`${fmt(stats.completionRate30d * 100, { integer: true })}%`}
           iconColor={color}
         />
       </div>

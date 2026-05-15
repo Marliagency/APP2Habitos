@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Camera, Mic, ScanLine, Plus, Target, Scale, ChevronLeft, ChevronRight, ChefHat, PenLine } from 'lucide-react';
+import { Camera, Mic, ScanLine, Plus, Target, Scale, ChevronLeft, ChevronRight, ChefHat, PenLine, Search, Trash2, BookOpen } from 'lucide-react';
+import { fmt, fmtKcal } from '../../../shared/utils/fmt';
 import { useNutritionStore } from '../store/nutritionStore';
 import { DailyRings } from '../components/DailyRings';
 import { MealCard } from '../components/MealCard';
@@ -19,9 +20,95 @@ import { Button, Modal, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent } fro
 import { MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
 
+import type { FoodItem } from '../types';
+
 const MEAL_TYPES: Meal['type'][] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 type AddMode = 'photo' | 'voice' | 'barcode' | 'template' | 'manual' | null;
+
+// ─── Food library ─────────────────────────────────────────────────────────────
+function FoodLibrary({ foods, onDelete, onAdd }: {
+  foods: FoodItem[];
+  onDelete: (id: string) => Promise<void>;
+  onAdd: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = foods.filter(f =>
+    f.name.toLowerCase().includes(search.toLowerCase()) ||
+    f.brand?.toLowerCase().includes(search.toLowerCase())
+  ).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const SOURCE_LABEL: Record<FoodItem['source'], string> = {
+    manual: 'Manual', ai: 'IA', barcode: 'Barcode', voice: 'Voz',
+  };
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+          <input
+            type="text"
+            placeholder="Buscar alimentos…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-8 pr-3 py-2 rounded-[var(--r-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30"
+          />
+        </div>
+        <button
+          onClick={onAdd}
+          className="flex items-center gap-1.5 px-3 py-2 bg-[var(--accent)] text-white rounded-[var(--r-lg)] text-sm font-medium hover:opacity-90 transition-opacity shrink-0"
+        >
+          <Plus size={14} />
+          Añadir
+        </button>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-12 space-y-2">
+          <BookOpen size={28} className="mx-auto text-[var(--text-tertiary)]" />
+          <p className="text-sm text-[var(--text-tertiary)]">
+            {foods.length === 0
+              ? 'Tu biblioteca de alimentos está vacía. Añade comidas para guardarlas aquí.'
+              : 'Sin resultados para esa búsqueda.'}
+          </p>
+        </div>
+      ) : (
+        <div className="section-group">
+          <p className="section-header">{filtered.length} alimento{filtered.length !== 1 ? 's' : ''}</p>
+          <div className="section-body">
+            {filtered.map(food => (
+              <div key={food.id} className="section-row">
+                <div className="section-row-content">
+                  <div>
+                    <span className="section-row-label">{food.name}</span>
+                    <span className="section-row-value">{fmtKcal(food.macros.calories)} · {food.serving}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-[var(--text-tertiary)]">
+                      P: {fmt(food.macros.protein, { integer: true })}g ·
+                      C: {fmt(food.macros.carbs, { integer: true })}g ·
+                      G: {fmt(food.macros.fat, { integer: true })}g
+                    </span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-[var(--r-sm)] bg-[var(--bg-hover)] text-[var(--text-tertiary)]">
+                      {SOURCE_LABEL[food.source]}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => onDelete(food.id)}
+                  className="w-7 h-7 flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--danger)] transition-colors shrink-0"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function NutritionView() {
   const store = useNutritionStore();
@@ -97,6 +184,7 @@ export default function NutritionView() {
           <TabsTrigger value="today">Hoy</TabsTrigger>
           <TabsTrigger value="week">Semana</TabsTrigger>
           <TabsTrigger value="month">Mes</TabsTrigger>
+          <TabsTrigger value="library">Biblioteca</TabsTrigger>
         </TabsList>
 
         {/* ── Today ────────────────────────────────────── */}
@@ -216,6 +304,15 @@ export default function NutritionView() {
             <CaloriesMonthChart store={store} />
             <BodyWeightChart bodyWeight={store.bodyWeight} />
           </div>
+        </TabsContent>
+
+        {/* ── Library ──────────────────────────────────── */}
+        <TabsContent value="library">
+          <FoodLibrary
+            foods={store.foods}
+            onDelete={store.deleteFood}
+            onAdd={() => setAddMode('manual')}
+          />
         </TabsContent>
       </Tabs>
 

@@ -3,6 +3,7 @@ import {
   LineChart, Line,
 } from 'recharts';
 import { Trophy, Zap } from 'lucide-react';
+import { fmt } from '../../../shared/utils/fmt';
 import { ChartCard } from './ChartCard';
 import { EXERCISE_MAP } from '../../workouts/data/exercises';
 import type { Workout } from '../../workouts/types';
@@ -87,7 +88,7 @@ export function WorkoutsSection({ workouts, weeklyVolume, totalPRs }: WorkoutsSe
           <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">Total sesiones</p>
         </div>
         <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-lg)] p-3 text-center">
-          <p className="text-xl font-bold text-[var(--text-primary)]">{Math.round(avgVolume / 1000 * 10) / 10}t</p>
+          <p className="text-xl font-bold text-[var(--text-primary)]">{fmt(avgVolume / 1000, { decimals: 1 })}t</p>
           <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">Vol. medio/semana</p>
         </div>
         <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-lg)] p-3 text-center flex flex-col items-center">
