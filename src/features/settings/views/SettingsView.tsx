@@ -1,25 +1,20 @@
 import { useState, useEffect } from 'react';
-import { Settings, Key, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { Key, Eye, EyeOff, CheckCircle2, Moon, Bell, Smartphone, Trash2, Download, Info } from 'lucide-react';
 import { Toggle, Button } from '../../../shared/components/ui';
 import { useAppSettings } from '../../../shared/hooks/useAppSettings';
 import { useToast } from '../../../shared/components/ui';
+import { storage, STORAGE_KEYS } from '../../../shared/lib/storage';
 
-const AI_CLAUDE_KEY  = 'ai_claude_key';
-const AI_OPENAI_KEY  = 'ai_openai_key';
+const AI_CLAUDE_KEY = 'ai_claude_key';
+const AI_OPENAI_KEY = 'ai_openai_key';
 
-function APIKeyField({
-  label,
-  storageKey,
-  placeholder,
-}: {
-  label: string;
-  storageKey: string;
-  placeholder: string;
+function APIKeyField({ label, storageKey, placeholder }: {
+  label: string; storageKey: string; placeholder: string;
 }) {
-  const { toast } = useToast();
-  const [value,   setValue]   = useState(() => localStorage.getItem(storageKey) ?? '');
-  const [visible, setVisible] = useState(false);
-  const [saved,   setSaved]   = useState(false);
+  const { toast }                       = useToast();
+  const [value, setValue]               = useState(() => localStorage.getItem(storageKey) ?? '');
+  const [visible, setVisible]           = useState(false);
+  const [saved, setSaved]               = useState(false);
 
   useEffect(() => {
     const existing = localStorage.getItem(storageKey) ?? '';
@@ -41,15 +36,15 @@ function APIKeyField({
   };
 
   const masked = value.length > 8
-    ? value.slice(0, 4) + '•'.repeat(value.length - 8) + value.slice(-4)
+    ? value.slice(0, 4) + '•'.repeat(Math.min(value.length - 8, 20)) + value.slice(-4)
     : '•'.repeat(value.length);
 
   return (
-    <div className="px-4 py-4 space-y-2">
+    <div className="px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Key size={13} className="text-[var(--text-tertiary)]" />
-          <span className="text-sm font-medium text-[var(--text-primary)]">{label}</span>
+          <span className="text-sm text-[var(--text-primary)]">{label}</span>
         </div>
         {saved && <CheckCircle2 size={13} className="text-[var(--success)]" />}
       </div>
@@ -64,79 +59,191 @@ function APIKeyField({
           />
           <button
             onClick={() => setVisible(v => !v)}
-            aria-label={visible ? 'Ocultar clave' : 'Mostrar clave'}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+            aria-label={visible ? 'Ocultar' : 'Mostrar'}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
           >
             {visible ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleSave}>
-          Guardar
-        </Button>
+        <Button variant="secondary" size="sm" onClick={handleSave}>Guardar</Button>
       </div>
       {saved && value && (
-        <p className="text-[10px] text-[var(--text-tertiary)]">
-          Almacenada localmente: {masked}
-        </p>
+        <p className="text-[10px] text-[var(--text-tertiary)]">Almacenada: {masked}</p>
       )}
-      <p className="text-[10px] text-[var(--text-tertiary)]">
-        Las claves se guardan solo en este dispositivo y nunca se envían a servidores externos.
-      </p>
     </div>
   );
 }
 
 export default function SettingsView() {
   const { settings, updateSettings } = useAppSettings();
+  const { toast }                    = useToast();
+  const [exportLoading, setExportLoading] = useState(false);
+  const [clearConfirm, setClearConfirm]   = useState(false);
+
+  const handleExport = async () => {
+    setExportLoading(true);
+    try {
+      const keys = Object.values(STORAGE_KEYS);
+      const data: Record<string, unknown> = {};
+      for (const key of keys) {
+        const val = await storage.getItem(key);
+        if (val !== null) data[key] = val;
+      }
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `app2habitos_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Datos exportados', 'success');
+    } catch {
+      toast('Error al exportar', 'error');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!clearConfirm) {
+      setClearConfirm(true);
+      setTimeout(() => setClearConfirm(false), 4000);
+      return;
+    }
+    const keys = Object.values(STORAGE_KEYS);
+    for (const key of keys) {
+      await storage.removeItem(key).catch(() => {});
+    }
+    toast('Todos los datos eliminados. Recarga la app.', 'warning');
+    setClearConfirm(false);
+  };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto pb-24">
-      <div className="flex items-center gap-3 mb-6">
-        <Settings size={20} className="text-[var(--text-tertiary)]" />
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Ajustes</h1>
+    <div className="p-4 md:p-6 max-w-2xl mx-auto pb-24 space-y-6">
+      <h1 className="text-xl font-semibold text-[var(--text-primary)]">Ajustes</h1>
+
+      {/* Appearance */}
+      <div className="section-group">
+        <p className="section-header">Apariencia</p>
+        <div className="section-body">
+          <div className="section-row">
+            <div className="section-row-icon" style={{ background: '#1c1c1e20', color: '#1c1c1e' }}>
+              <Moon size={15} />
+            </div>
+            <div className="section-row-content">
+              <span className="section-row-label">Modo oscuro</span>
+              <Toggle
+                checked={settings.theme === 'dark'}
+                onChange={v => updateSettings({ theme: v ? 'dark' : 'light' })}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-5">
-        {/* General */}
-        <section>
-          <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-2 px-1">General</p>
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] divide-y divide-[var(--border-subtle)]">
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm font-medium text-[var(--text-primary)]">Notificaciones</span>
-              <Toggle checked={settings.notifications} onChange={v => updateSettings({ notifications: v })} />
+      {/* Notifications */}
+      <div className="section-group">
+        <p className="section-header">Notificaciones</p>
+        <div className="section-body">
+          <div className="section-row">
+            <div className="section-row-icon" style={{ background: '#ff3b3020', color: '#ff3b30' }}>
+              <Bell size={15} />
             </div>
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm font-medium text-[var(--text-primary)]">Vibración háptica</span>
-              <Toggle checked={settings.haptics} onChange={v => updateSettings({ haptics: v })} />
-            </div>
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm font-medium text-[var(--text-primary)]">Modo oscuro</span>
-              <Toggle checked={settings.theme === 'dark'} onChange={v => updateSettings({ theme: v ? 'dark' : 'light' })} />
+            <div className="section-row-content">
+              <span className="section-row-label">Notificaciones push</span>
+              <Toggle
+                checked={settings.notifications}
+                onChange={v => updateSettings({ notifications: v })}
+              />
             </div>
           </div>
-        </section>
-
-        {/* AI Keys */}
-        <section>
-          <p className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide mb-2 px-1">Inteligencia Artificial</p>
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] divide-y divide-[var(--border-subtle)]">
-            <APIKeyField
-              label="Clave API Claude (Anthropic)"
-              storageKey={AI_CLAUDE_KEY}
-              placeholder="sk-ant-api03-…"
-            />
-            <APIKeyField
-              label="Clave API OpenAI"
-              storageKey={AI_OPENAI_KEY}
-              placeholder="sk-proj-…"
-            />
+          <div className="section-row">
+            <div className="section-row-icon" style={{ background: '#34c75920', color: '#34c759' }}>
+              <Smartphone size={15} />
+            </div>
+            <div className="section-row-content">
+              <span className="section-row-label">Vibración háptica</span>
+              <Toggle
+                checked={settings.haptics}
+                onChange={v => updateSettings({ haptics: v })}
+              />
+            </div>
           </div>
-          <p className="text-[10px] text-[var(--text-tertiary)] mt-2 px-1">
-            Necesitas al menos una clave para usar el Asistente IA, análisis de fotos de alimentos y el Diario con sugerencias de reflexión.
-          </p>
-        </section>
+        </div>
+        <p className="section-footer">Las notificaciones se activan según los recordatorios de tus hábitos.</p>
+      </div>
 
-        <p className="text-xs text-[var(--text-tertiary)] text-center pt-2">APP2Habitos v1.0.0</p>
+      {/* AI Keys */}
+      <div className="section-group">
+        <p className="section-header">Inteligencia Artificial</p>
+        <div className="section-body">
+          <APIKeyField
+            label="Claude (Anthropic)"
+            storageKey={AI_CLAUDE_KEY}
+            placeholder="sk-ant-api03-…"
+          />
+          <div style={{ height: '0.5px', background: 'var(--border-subtle)', margin: '0 16px' }} />
+          <APIKeyField
+            label="OpenAI"
+            storageKey={AI_OPENAI_KEY}
+            placeholder="sk-proj-…"
+          />
+        </div>
+        <p className="section-footer">
+          Las claves se almacenan solo en este dispositivo y nunca se envían a servidores externos.
+          Necesitas al menos una para el Asistente IA, análisis de fotos y el Diario con IA.
+        </p>
+      </div>
+
+      {/* Data */}
+      <div className="section-group">
+        <p className="section-header">Datos</p>
+        <div className="section-body">
+          <button
+            onClick={handleExport}
+            disabled={exportLoading}
+            className="section-row section-row-pressable w-full text-left"
+          >
+            <div className="section-row-icon" style={{ background: '#007aff20', color: '#007aff' }}>
+              <Download size={15} />
+            </div>
+            <div className="section-row-content">
+              <span className="section-row-label">{exportLoading ? 'Exportando…' : 'Exportar mis datos'}</span>
+              <span className="section-row-value">JSON</span>
+            </div>
+          </button>
+          <button
+            onClick={handleClearAll}
+            className="section-row section-row-pressable w-full text-left"
+          >
+            <div className="section-row-icon" style={{ background: '#ff3b3020', color: '#ff3b30' }}>
+              <Trash2 size={15} />
+            </div>
+            <div className="section-row-content">
+              <span className="section-row-label" style={{ color: clearConfirm ? 'var(--danger)' : undefined }}>
+                {clearConfirm ? '¿Seguro? Pulsa de nuevo para confirmar' : 'Borrar todos los datos'}
+              </span>
+            </div>
+          </button>
+        </div>
+        <p className="section-footer">Exporta un JSON con todos tus hábitos, entrenamientos, nutrición y diario.</p>
+      </div>
+
+      {/* About */}
+      <div className="section-group">
+        <p className="section-header">Acerca de</p>
+        <div className="section-body">
+          <div className="section-row">
+            <div className="section-row-icon" style={{ background: '#5856d620', color: '#5856d6' }}>
+              <Info size={15} />
+            </div>
+            <div className="section-row-content">
+              <span className="section-row-label">APP2Habitos</span>
+              <span className="section-row-value">v1.0.0</span>
+            </div>
+          </div>
+        </div>
+        <p className="section-footer">Tu sistema operativo personal — hábitos, entrenos, nutrición, diario y objetivos.</p>
       </div>
     </div>
   );

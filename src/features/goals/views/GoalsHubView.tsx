@@ -223,7 +223,7 @@ export default function GoalsHubView() {
           <ProgressRow icon={<Utensils size={13} />} label={`Nutrición — ${avgCalories !== null ? Math.round(avgCalories) : '–'} kcal/día media`} ok={progress.nutritionOk} />
           <ProgressRow icon={<Dumbbell size={13} />} label={`Entrenos — ${workoutsThisWeek} de ${goal.derived.workoutDaysPerWeek} sesiones`} ok={progress.workoutOk} />
           <ProgressRow icon={<ListTodo size={13} />} label={`Hábitos — ${Math.round(habitPct)}% de cumplimiento`} ok={progress.habitsOk} />
-          <ProgressRow icon={<Brain size={13} />}    label={`Estado de ánimo — ${avgMood !== null ? avgMood.toFixed(1) : '–'}/5 media`} ok={progress.moodOk} />
+          <ProgressRow icon={<Brain size={13} />}    label={`Estado de ánimo — ${avgMood !== null ? Math.round(avgMood * 10) / 10 : '–'}/5 media`} ok={progress.moodOk} />
         </div>
       </div>
 

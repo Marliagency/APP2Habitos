@@ -5,12 +5,17 @@ import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  BarChart, Bar,
+  BarChart, Bar, CartesianGrid,
 } from 'recharts';
 import { useWorkoutsStore } from '../store/workoutsStore';
 import { EXERCISE_MAP } from '../data/exercises';
+import { MUSCLE_GROUP_LABELS } from '../types';
 import { calc1RM, calc1RMBrzycki, calc1RMLombardi } from '../types';
 import { Button } from '../../../shared/components/ui';
+import { fmt, fmtKg } from '../../../shared/utils/fmt';
+import { CHART_THEME, AppleTooltip } from '../../../shared/utils/chartTheme';
+
+const COLOR = '#ff3b30';
 
 export default function ExerciseDetailView() {
   const { exerciseId } = useParams<{ exerciseId: string }>();
@@ -38,7 +43,7 @@ export default function ExerciseDetailView() {
         label:  format(parseISO(w.date), 'd MMM', { locale: es }),
         weight: topSet.weight!,
         reps:   topSet.reps!,
-        e1rm:   calc1RM(topSet.weight!, topSet.reps!),
+        e1rm:   Math.round(calc1RM(topSet.weight!, topSet.reps!)),
         volume: Math.round(totalVolume),
         sets:   working.length,
       });
@@ -46,7 +51,7 @@ export default function ExerciseDetailView() {
     return result;
   }, [workouts, exerciseId]);
 
-  const pr1RM = history.length > 0 ? Math.max(...history.map(h => h.e1rm)) : 0;
+  const pr1RM    = history.length > 0 ? Math.max(...history.map(h => h.e1rm)) : 0;
   const prWeight = history.length > 0 ? Math.max(...history.map(h => h.weight)) : 0;
   const lastSession = history[history.length - 1];
 
@@ -59,11 +64,15 @@ export default function ExerciseDetailView() {
     );
   }
 
-  const topSet1RMBreakdown = lastSession ? [
-    { method: 'Epley',    value: calc1RM(lastSession.weight, lastSession.reps) },
-    { method: 'Brzycki',  value: calc1RMBrzycki(lastSession.weight, lastSession.reps) },
-    { method: 'Lombardi', value: calc1RMLombardi(lastSession.weight, lastSession.reps) },
-    { method: 'Media',    value: calc1RM(lastSession.weight, lastSession.reps) },
+  const muscles = exercise.muscleGroups
+    .map(m => MUSCLE_GROUP_LABELS[m] ?? m)
+    .join(' · ');
+
+  const orm1RMBreakdown = lastSession ? [
+    { method: 'Epley',    value: Math.round(calc1RM(lastSession.weight, lastSession.reps)) },
+    { method: 'Brzycki',  value: Math.round(calc1RMBrzycki(lastSession.weight, lastSession.reps)) },
+    { method: 'Lombardi', value: Math.round(calc1RMLombardi(lastSession.weight, lastSession.reps)) },
+    { method: 'Media',    value: Math.round((calc1RM(lastSession.weight, lastSession.reps) + calc1RMBrzycki(lastSession.weight, lastSession.reps) + calc1RMLombardi(lastSession.weight, lastSession.reps)) / 3) },
   ] : [];
 
   return (
@@ -78,28 +87,28 @@ export default function ExerciseDetailView() {
         </button>
         <div>
           <h1 className="text-xl font-semibold text-[var(--text-primary)]">{exercise.name}</h1>
-          <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
-            {exercise.muscleGroups.map(m => m).join(' · ')} · {exercise.equipment}
-          </p>
+          <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{muscles} · {exercise.equipment}</p>
         </div>
       </div>
 
       {/* PR stat cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3 text-center">
+        <div className="metric-card text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Trophy size={12} className="text-[var(--warning)]" />
-            <span className="text-[10px] text-[var(--text-tertiary)]">1RM estimado</span>
+            <span className="text-[10px] text-[var(--text-tertiary)]">1RM est.</span>
           </div>
-          <p className="text-xl font-bold text-[var(--text-primary)]">{pr1RM}<span className="text-xs font-normal text-[var(--text-tertiary)]"> kg</span></p>
+          <p className="mono" style={{ fontSize: 22, fontWeight: 700, color: COLOR }}>{fmt(pr1RM, { integer: true })}</p>
+          <p className="text-[10px] text-[var(--text-tertiary)]">kg</p>
         </div>
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3 text-center">
+        <div className="metric-card text-center">
           <p className="text-[10px] text-[var(--text-tertiary)] mb-1">Peso máximo</p>
-          <p className="text-xl font-bold text-[var(--text-primary)]">{prWeight}<span className="text-xs font-normal text-[var(--text-tertiary)]"> kg</span></p>
+          <p className="mono" style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>{fmt(prWeight, { decimals: 1 })}</p>
+          <p className="text-[10px] text-[var(--text-tertiary)]">kg</p>
         </div>
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3 text-center">
+        <div className="metric-card text-center">
           <p className="text-[10px] text-[var(--text-tertiary)] mb-1">Sesiones</p>
-          <p className="text-xl font-bold text-[var(--text-primary)]">{history.length}</p>
+          <p className="mono" style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-primary)' }}>{history.length}</p>
         </div>
       </div>
 
@@ -110,71 +119,75 @@ export default function ExerciseDetailView() {
         </div>
       ) : (
         <>
-          {/* 1RM trend chart */}
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp size={14} className="text-[var(--accent)]" />
-              <p className="text-sm font-semibold text-[var(--text-primary)]">Progreso 1RM estimado</p>
+          {/* 1RM trend */}
+          <div className="metric-card">
+            <div className="metric-card-header">
+              <span className="metric-card-title">Progreso 1RM estimado</span>
+              <div className="flex items-center gap-1.5">
+                <TrendingUp size={13} style={{ color: COLOR }} />
+                <span className="mono" style={{ fontSize: 16, fontWeight: 700, color: COLOR }}>{fmtKg(pr1RM)}</span>
+              </div>
             </div>
             <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={history} margin={{ top: 4, right: 0, left: -24, bottom: 0 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 9, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
-                <Tooltip
-                  contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 8, fontSize: 11 }}
-                  formatter={(v: number) => [`${v} kg`, '1RM est.']}
-                />
-                <Line type="monotone" dataKey="e1rm" stroke="var(--accent)" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 3 }} />
+              <LineChart data={history}>
+                <CartesianGrid {...CHART_THEME.grid} />
+                <XAxis dataKey="label" {...CHART_THEME.axis} interval="preserveStartEnd" />
+                <YAxis {...CHART_THEME.axis} tickFormatter={v => fmt(v, { integer: true })} domain={['auto', 'auto']} width={36} />
+                <Tooltip content={<AppleTooltip unit="kg" decimals={1} />} />
+                <Line type="monotone" dataKey="e1rm" stroke={COLOR} strokeWidth={2.5} dot={{ fill: COLOR, r: 4, strokeWidth: 0 }} name="1RM est." />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Volume chart */}
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-            <p className="text-sm font-semibold text-[var(--text-primary)] mb-3">Volumen por sesión (kg)</p>
+          {/* Volume per session */}
+          <div className="metric-card">
+            <div className="metric-card-header">
+              <span className="metric-card-title">Volumen por sesión</span>
+            </div>
             <ResponsiveContainer width="100%" height={120}>
-              <BarChart data={history} margin={{ top: 0, right: 0, left: -24, bottom: 0 }}>
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 9, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 8, fontSize: 11 }}
-                  formatter={(v: number) => [`${v} kg`, 'Volumen']}
-                />
-                <Bar dataKey="volume" fill="var(--neutral-900)" radius={[3, 3, 0, 0]} />
+              <BarChart data={history} barCategoryGap="30%">
+                <CartesianGrid {...CHART_THEME.grid} />
+                <XAxis dataKey="label" {...CHART_THEME.axis} interval="preserveStartEnd" />
+                <YAxis {...CHART_THEME.axis} tickFormatter={v => fmt(v, { integer: true })} width={36} />
+                <Tooltip content={<AppleTooltip unit="kg" decimals={0} />} />
+                <Bar dataKey="volume" fill={COLOR} radius={[4, 4, 0, 0]} name="Volumen" fillOpacity={0.85} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* 1RM breakdown for last session */}
+          {/* 1RM formula breakdown */}
           {lastSession && (
-            <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-              <p className="text-sm font-semibold text-[var(--text-primary)] mb-3">
-                Desglose 1RM — última sesión ({lastSession.weight}kg × {lastSession.reps})
+            <div className="section-group">
+              <p className="section-header">
+                Desglose 1RM — {fmtKg(lastSession.weight)} × {lastSession.reps} reps
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                {topSet1RMBreakdown.map(({ method, value }) => (
-                  <div key={method} className="flex items-center justify-between px-3 py-2 bg-[var(--bg-base)] rounded-[var(--r-lg)]">
-                    <span className="text-xs text-[var(--text-secondary)]">{method}</span>
-                    <span className="text-sm font-bold text-[var(--text-primary)]">{value} kg</span>
+              <div className="section-body">
+                {orm1RMBreakdown.map(({ method, value }) => (
+                  <div key={method} className="section-row">
+                    <span className="section-row-label">{method}</span>
+                    <span className="section-row-value" style={{ color: COLOR, fontWeight: 700 }}>{fmtKg(value)}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Session history list */}
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-            <p className="text-sm font-semibold text-[var(--text-primary)] mb-3">Historial de sesiones</p>
-            <div className="space-y-2">
-              {[...history].reverse().slice(0, 10).map((h, i) => (
-                <div key={i} className="flex items-center gap-3 px-2 py-1.5 rounded-[var(--r-md)] hover:bg-[var(--bg-hover)]">
-                  <span className="text-xs text-[var(--text-tertiary)] w-12 shrink-0">{h.label}</span>
-                  <span className="text-xs font-medium text-[var(--text-primary)]">{h.weight}kg × {h.reps}</span>
-                  <span className="text-xs text-[var(--text-tertiary)]">{h.sets} sets</span>
-                  <div className="flex-1" />
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-[var(--accent)] font-medium">~{h.e1rm}kg</span>
-                    <span className="text-[9px] text-[var(--text-tertiary)]">1RM</span>
+          {/* Session history */}
+          <div className="section-group">
+            <p className="section-header">Historial de sesiones</p>
+            <div className="section-body">
+              {[...history].reverse().slice(0, 12).map((h, i) => (
+                <div key={i} className="section-row">
+                  <span className="text-xs text-[var(--text-tertiary)] w-14 shrink-0">{h.label}</span>
+                  <div className="section-row-content">
+                    <div>
+                      <span className="section-row-label">{fmtKg(h.weight)} × {h.reps}</span>
+                      <span className="section-row-value">{h.sets} sets</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold" style={{ color: COLOR }}>~{fmtKg(h.e1rm)}</span>
+                      <span className="text-[9px] text-[var(--text-tertiary)]">1RM</span>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -2,28 +2,44 @@ import { useState } from 'react';
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  CartesianGrid, ReferenceLine,
+} from 'recharts';
 import { useNutritionStore } from '../../nutrition/store/nutritionStore';
 import { Button, Modal } from '../../../shared/components/ui';
+import { fmt, fmtKg } from '../../../shared/utils/fmt';
+import { CHART_THEME, AppleTooltip } from '../../../shared/utils/chartTheme';
+
+const COLOR = '#007aff';
 
 export default function BodyMetricsView() {
   const { bodyWeight, logBodyWeight, deleteBodyWeight, loaded, loadFromStorage } = useNutritionStore();
-  const [showAdd, setShowAdd]   = useState(false);
-  const [input, setInput]       = useState('');
-  const [note, setNote]         = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [input, setInput]     = useState('');
+  const [note, setNote]       = useState('');
 
   if (!loaded) { loadFromStorage(); return null; }
 
-  const sorted = [...bodyWeight].sort((a, b) => a.date.localeCompare(b.date));
-  const last   = sorted[sorted.length - 1];
-  const prev   = sorted[sorted.length - 2];
-  const diff   = last && prev ? Math.round((last.weight - prev.weight) * 10) / 10 : null;
+  const sorted  = [...bodyWeight].sort((a, b) => a.date.localeCompare(b.date));
+  const last    = sorted[sorted.length - 1];
+  const prev    = sorted[sorted.length - 2];
+  const diff    = last && prev ? Math.round((last.weight - prev.weight) * 100) / 100 : null;
+  const totalDelta = sorted.length >= 2
+    ? Math.round((sorted[sorted.length - 1].weight - sorted[0].weight) * 100) / 100
+    : null;
 
-  const chartData = sorted.slice(-30).map(b => ({
-    date:  b.date,
-    label: format(parseISO(b.date), 'd MMM', { locale: es }),
+  const chartData = sorted.slice(-60).map(b => ({
+    label:  format(parseISO(b.date), 'd MMM', { locale: es }),
     weight: b.weight,
   }));
+
+  const weights     = chartData.map(d => d.weight);
+  const domainMin   = weights.length > 0 ? Math.min(...weights) - 1 : 0;
+  const domainMax   = weights.length > 0 ? Math.max(...weights) + 1 : 100;
+  const avgWeight   = weights.length > 0
+    ? Math.round((weights.reduce((a, b) => a + b, 0) / weights.length) * 10) / 10
+    : null;
 
   const handleSave = async () => {
     const w = parseFloat(input);
@@ -34,7 +50,7 @@ export default function BodyMetricsView() {
     setShowAdd(false);
   };
 
-  const TrendIcon = diff == null ? Minus : diff > 0 ? TrendingUp : TrendingDown;
+  const TrendIcon  = diff == null ? Minus : diff > 0 ? TrendingUp : TrendingDown;
   const trendColor = diff == null ? 'var(--text-tertiary)' : diff > 0 ? 'var(--danger)' : 'var(--success)';
 
   return (
@@ -50,44 +66,60 @@ export default function BodyMetricsView() {
         </Button>
       </div>
 
-      {/* Current stats */}
+      {/* Stats */}
       {last && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3 text-center">
-            <p className="text-2xl font-bold text-[var(--text-primary)]">{last.weight}</p>
-            <p className="text-[10px] text-[var(--text-tertiary)]">kg actual</p>
+          <div className="metric-card text-center">
+            <p className="text-[10px] text-[var(--text-tertiary)] mb-1">Actual</p>
+            <p className="mono" style={{ fontSize: 24, fontWeight: 700, color: COLOR }}>{fmtKg(last.weight)}</p>
           </div>
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3 text-center">
+          <div className="metric-card text-center">
+            <p className="text-[10px] text-[var(--text-tertiary)] mb-1">vs anterior</p>
             <div className="flex items-center justify-center gap-1">
               <TrendIcon size={14} style={{ color: trendColor }} />
-              <p className="text-2xl font-bold" style={{ color: trendColor }}>
-                {diff != null ? (diff > 0 ? `+${diff}` : diff) : '—'}
+              <p className="mono" style={{ fontSize: 20, fontWeight: 700, color: trendColor }}>
+                {diff != null ? `${diff > 0 ? '+' : ''}${fmt(diff, { decimals: 1 })}` : '—'}
               </p>
             </div>
-            <p className="text-[10px] text-[var(--text-tertiary)]">vs anterior</p>
+            {diff != null && <p className="text-[10px] text-[var(--text-tertiary)]">kg</p>}
           </div>
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-3 text-center">
-            <p className="text-2xl font-bold text-[var(--text-primary)]">
-              {sorted.length >= 2 ? Math.round((sorted[sorted.length - 1].weight - sorted[0].weight) * 10) / 10 : '—'}
+          <div className="metric-card text-center">
+            <p className="text-[10px] text-[var(--text-tertiary)] mb-1">Cambio total</p>
+            <p className="mono" style={{ fontSize: 20, fontWeight: 700, color: totalDelta != null && totalDelta < 0 ? 'var(--success)' : totalDelta != null && totalDelta > 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+              {totalDelta != null ? `${totalDelta > 0 ? '+' : ''}${fmt(totalDelta, { decimals: 1 })}` : '—'}
             </p>
-            <p className="text-[10px] text-[var(--text-tertiary)]">cambio total</p>
+            {totalDelta != null && <p className="text-[10px] text-[var(--text-tertiary)]">kg</p>}
           </div>
         </div>
       )}
 
       {/* Chart */}
       {chartData.length >= 2 && (
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] p-4">
-          <p className="text-sm font-semibold text-[var(--text-primary)] mb-3">Últimos 30 días</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={chartData} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
-              <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 9, fill: 'var(--text-tertiary)' }} tickLine={false} axisLine={false} domain={['auto', 'auto']} />
-              <Tooltip
-                contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 8, fontSize: 11 }}
-                formatter={(v: number) => [`${v} kg`, 'Peso']}
-              />
-              <Line type="monotone" dataKey="weight" stroke="var(--accent)" strokeWidth={2} dot={{ fill: 'var(--accent)', r: 3 }} />
+        <div className="metric-card">
+          <div className="metric-card-header">
+            <span className="metric-card-title">Evolución — últimos 60 días</span>
+            {avgWeight !== null && (
+              <span className="delta-pill delta-neutral">{fmtKg(avgWeight)} media</span>
+            )}
+          </div>
+          <ResponsiveContainer width="100%" height={180}>
+            <LineChart data={chartData}>
+              <defs>
+                <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={COLOR} stopOpacity={0.12} />
+                  <stop offset="95%" stopColor={COLOR} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...CHART_THEME.grid} />
+              <XAxis dataKey="label" {...CHART_THEME.axis} interval="preserveStartEnd" />
+              <YAxis {...CHART_THEME.axis} domain={[domainMin, domainMax]} tickFormatter={v => fmt(v, { integer: true })} width={32} />
+              <Tooltip content={<AppleTooltip unit="kg" decimals={1} />} />
+              {avgWeight && (
+                <ReferenceLine y={avgWeight} stroke={COLOR} strokeDasharray="4 3" strokeWidth={1}
+                  label={{ value: 'Media', position: 'right', fontSize: 10, fill: COLOR }} />
+              )}
+              <Line type="monotone" dataKey="weight" stroke={COLOR} strokeWidth={2.5}
+                dot={{ fill: COLOR, r: 3, strokeWidth: 0 }} name="Peso" />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -100,33 +132,38 @@ export default function BodyMetricsView() {
           <p className="text-sm text-[var(--text-tertiary)]">Sin registros aún. Empieza a trackear tu peso.</p>
         </div>
       ) : (
-        <div className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-xl)] divide-y divide-[var(--border-subtle)]">
-          {[...sorted].reverse().slice(0, 20).map((b, i) => {
-            const prev2 = sorted.find(s => s.date < b.date);
-            const d = prev2 ? Math.round((b.weight - prev2.weight) * 10) / 10 : null;
-            return (
-              <div key={i} className="flex items-center gap-3 px-4 py-2.5">
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-[var(--text-primary)]">{b.weight} kg</p>
-                  <p className="text-[10px] text-[var(--text-tertiary)]">
-                    {format(parseISO(b.date), "d 'de' MMMM yyyy", { locale: es })}
-                    {b.note ? ` · ${b.note}` : ''}
-                  </p>
+        <div className="section-group">
+          <p className="section-header">Historial</p>
+          <div className="section-body">
+            {[...sorted].reverse().slice(0, 25).map((b, i) => {
+              const prevEntry = sorted.find(s => s.date < b.date);
+              const d = prevEntry ? Math.round((b.weight - prevEntry.weight) * 100) / 100 : null;
+              return (
+                <div key={i} className="section-row">
+                  <div className="section-row-content">
+                    <div>
+                      <span className="section-row-label">{fmtKg(b.weight)}</span>
+                      {d != null && (
+                        <span className="section-row-value" style={{ color: d > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                          {d > 0 ? '+' : ''}{fmt(d, { decimals: 1 })} kg
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-[var(--text-tertiary)]">
+                      {format(parseISO(b.date), "d 'de' MMMM yyyy", { locale: es })}
+                      {b.note ? ` · ${b.note}` : ''}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => deleteBodyWeight(b.date)}
+                    className="w-7 h-7 flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--danger)] transition-colors shrink-0"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
-                {d != null && (
-                  <span className={`text-xs font-medium ${d > 0 ? 'text-[var(--danger)]' : 'text-[var(--success)]'}`}>
-                    {d > 0 ? '+' : ''}{d} kg
-                  </span>
-                )}
-                <button
-                  onClick={() => deleteBodyWeight(b.date)}
-                  className="w-7 h-7 flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--danger)] transition-colors"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
 
