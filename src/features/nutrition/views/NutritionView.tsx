@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { Camera, Mic, ScanLine, Plus, Target, Scale, ChevronLeft, ChevronRight, ChefHat, PenLine, Search, Trash2, BookOpen } from 'lucide-react';
 import { fmt, fmtKcal } from '../../../shared/utils/fmt';
 import { useNutritionStore } from '../store/nutritionStore';
+import { useNutritionTargets } from '../hooks/useNutritionTargets';
 import { DailyRings } from '../components/DailyRings';
 import { MealCard } from '../components/MealCard';
 import { PhotoAnalyzer } from '../components/PhotoAnalyzer';
@@ -16,6 +17,7 @@ import {
   CaloriesWeekChart, CaloriesMonthChart, MacroSplitChart,
   BodyWeightChart, MacroRatioChart,
 } from '../components/NutritionCharts';
+import { MealHistoryList } from '../components/MealHistoryList';
 import { Button, Modal, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent } from '../../../shared/components/ui';
 import { MEAL_LABELS } from '../types';
 import type { Meal } from '../types';
@@ -124,10 +126,11 @@ export default function NutritionView() {
     if (!store.loaded) store.loadFromStorage();
   }, []);
 
-  const totals   = store.getTotalsForDate(date);
-  const meals    = store.getMealsForDate(date);
-  const targets  = store.targets;
-  const isToday  = date === format(new Date(), 'yyyy-MM-dd');
+  const totals           = store.getTotalsForDate(date);
+  const meals            = store.getMealsForDate(date);
+  const resolvedTargets  = useNutritionTargets();
+  const targets          = resolvedTargets;
+  const isToday          = date === format(new Date(), 'yyyy-MM-dd');
 
   const changeDay = (delta: number) => {
     const d = new Date(date + 'T12:00:00');
@@ -167,7 +170,14 @@ export default function NutritionView() {
         <div>
           <h1 className="text-xl font-semibold text-[var(--text-primary)]">Nutrición</h1>
           <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
-            {remainingCal >= 0 ? `${remainingCal} kcal restantes` : `${Math.abs(remainingCal)} kcal por encima del objetivo`}
+            {targets
+              ? remainingCal >= 0
+                ? `${fmt(remainingCal, { integer: true })} kcal restantes`
+                : `${fmt(Math.abs(remainingCal), { integer: true })} kcal por encima del objetivo`
+              : 'Sin objetivos configurados'}
+            {targets?.source === 'goal' && (
+              <span className="ml-1.5 text-[9px] px-1 py-0.5 rounded bg-[var(--accent)]/10 text-[var(--accent)]">desde objetivo</span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
@@ -287,6 +297,9 @@ export default function NutritionView() {
               </div>
             )}
           </div>
+
+          {/* Historial de comidas */}
+          <MealHistoryList />
         </TabsContent>
 
         {/* ── Week ─────────────────────────────────────── */}

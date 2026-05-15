@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, ChevronDown, ChevronUp, X, Timer, Check } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, X, Timer, Check, Bookmark } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useWorkoutsStore } from '../store/workoutsStore';
 import { EXERCISE_MAP } from '../data/exercises';
@@ -9,6 +9,7 @@ import { ExerciseSearch } from '../components/ExerciseSearch';
 import { InlineRestTimer } from '../components/RestTimer';
 import { useRestTimer } from '../hooks/useRestTimer';
 import { Button, Modal } from '../../../shared/components/ui';
+import { useToast } from '../../../shared/components/ui';
 import { calcTotalVolume } from '../types';
 import { fmt } from '../../../shared/utils/fmt';
 
@@ -19,12 +20,14 @@ export default function ActiveWorkoutView() {
     addExerciseToActive, removeExerciseFromActive,
     addSetToExercise, updateSet, removeSet,
     finishWorkout, discardWorkout,
-    getLastSetForExercise,
+    getLastSetForExercise, saveAsTemplate,
   } = useWorkoutsStore();
+  const { toast } = useToast();
 
   const [showExerciseSearch, setShowExerciseSearch] = useState(false);
   const [showFinishModal, setShowFinishModal]       = useState(false);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [savedAsTemplate, setSavedAsTemplate]       = useState(false);
   const [collapsedExercises, setCollapsedExercises] = useState<Set<string>>(new Set());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const restTimer = useRestTimer(90);
@@ -60,6 +63,13 @@ export default function ActiveWorkoutView() {
   const handleFinish = async () => {
     const finished = await finishWorkout();
     if (finished) navigate('/workouts');
+  };
+
+  const handleSaveAsTemplate = async () => {
+    if (!activeWorkout || savedAsTemplate) return;
+    await saveAsTemplate(activeWorkout);
+    setSavedAsTemplate(true);
+    toast('Plantilla guardada', 'success');
   };
 
   return (
@@ -230,6 +240,14 @@ export default function ActiveWorkoutView() {
               <p className="text-xs text-[var(--text-tertiary)]">Volumen (kg)</p>
             </div>
           </div>
+          <button
+            onClick={handleSaveAsTemplate}
+            disabled={savedAsTemplate}
+            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-[var(--r-md)] transition-colors border border-dashed border-[var(--border-default)] disabled:opacity-50"
+          >
+            <Bookmark size={12} />
+            {savedAsTemplate ? 'Plantilla guardada ✓' : 'Guardar como plantilla'}
+          </button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setShowFinishModal(false)} className="flex-1">Volver</Button>
             <Button variant="primary" onClick={handleFinish} className="flex-1" icon={<Check size={14} />}>

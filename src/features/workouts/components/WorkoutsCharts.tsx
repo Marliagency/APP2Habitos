@@ -87,7 +87,7 @@ export function WorkoutsVolumeChart({ workouts }: { workouts: Workout[] }) {
 }
 
 // ── Sessions frequency (bar chart last 12 weeks) ──────────────────────────────
-export function WorkoutsFrequencyChart({ workouts }: { workouts: Workout[] }) {
+export function WorkoutsFrequencyChart({ workouts, weeklyTarget }: { workouts: Workout[]; weeklyTarget?: number }) {
   const data = useMemo(() => {
     return Array.from({ length: 8 }, (_, i) => {
       const d = subDays(new Date(), (7 - i) * 7);
@@ -118,9 +118,13 @@ export function WorkoutsFrequencyChart({ workouts }: { workouts: Workout[] }) {
           <XAxis dataKey="label" {...CHART_THEME.axis} />
           <YAxis {...CHART_THEME.axis} tickFormatter={v => fmt(v, { integer: true })} domain={[0, maxCount + 1]} width={20} allowDecimals={false} />
           <Tooltip content={<AppleTooltip unit=" sesiones" decimals={0} />} />
+          {weeklyTarget !== undefined && weeklyTarget > 0 && (
+            <ReferenceLine y={weeklyTarget} stroke="var(--accent)" strokeDasharray="4 3" strokeWidth={1.5}
+              label={{ value: `🎯 ${weeklyTarget}`, position: 'right', fontSize: 10, fill: 'var(--accent)' }} />
+          )}
           <Bar dataKey="count" radius={[5, 5, 0, 0]} name="Sesiones">
             {data.map((d, i) => (
-              <Cell key={i} fill={d.isThis ? COLOR : d.count >= 3 ? '#34c759' : d.count >= 1 ? '#ff9500' : '#e5e5ea'} />
+              <Cell key={i} fill={d.isThis ? COLOR : weeklyTarget && d.count >= weeklyTarget ? '#34c759' : d.count >= 1 ? '#ff9500' : '#e5e5ea'} />
             ))}
           </Bar>
         </BarChart>

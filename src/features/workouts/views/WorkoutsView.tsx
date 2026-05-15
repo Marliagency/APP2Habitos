@@ -7,6 +7,7 @@ import {
   Button, EmptyState, Modal, Skeleton, Tabs, TabsList, TabsTrigger, TabsContent,
 } from '../../../shared/components/ui';
 import { useWorkouts } from '../hooks/useWorkouts';
+import { useWorkoutGoal } from '../hooks/useWorkoutGoal';
 import { fmt } from '../../../shared/utils/fmt';
 import { PlateCalculator } from '../components/PlateCalculator';
 import { WORKOUT_TEMPLATES } from '../data/templates';
@@ -44,6 +45,7 @@ function WorkoutsHome() {
   const [startName, setStartName]           = useState('');
 
   const { workouts, loaded, activeWorkout } = store;
+  const { weeklyTarget, workoutType, hasGoal } = useWorkoutGoal();
 
   const recentWorkouts = [...workouts].reverse().slice(0, 20);
   const fatigueScore   = computeFatigueScore(workouts);
@@ -239,8 +241,14 @@ function WorkoutsHome() {
                   icon={<Trophy size={12} />}
                 />
               </div>
+              {hasGoal && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-[var(--r-lg)] bg-[var(--accent)]/8 border border-[var(--accent)]/15 text-xs text-[var(--text-secondary)]">
+                  <span className="shrink-0" style={{ color: 'var(--accent)' }}>🎯</span>
+                  <span>Objetivo: <strong>{weeklyTarget} sesiones/semana</strong>{workoutType ? ` · ${workoutType}` : ''}</span>
+                </div>
+              )}
               <WorkoutsVolumeChart workouts={workouts} />
-              <WorkoutsFrequencyChart workouts={workouts} />
+              <WorkoutsFrequencyChart workouts={workouts} weeklyTarget={weeklyTarget} />
               <MuscleDistributionChart workouts={workouts} />
               <TopPRsChart workouts={workouts} />
               <OneRMProgressionChart workouts={workouts} />

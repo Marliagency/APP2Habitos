@@ -40,6 +40,10 @@ interface WorkoutsState {
   getPRForExercise: (exerciseId: string) => { orm: number; weight: number; reps: number } | null;
   getVolumeByWeek: () => { week: string; volume: number }[];
   getWorkoutsByMonth: () => { date: string; count: number }[];
+
+  // User templates
+  saveAsTemplate: (workout: Workout) => Promise<WorkoutTemplate>;
+  deleteUserTemplate: (id: string) => Promise<void>;
 }
 
 export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
@@ -50,13 +54,16 @@ export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
   loaded: false,
 
   loadFromStorage: async () => {
-    const [workouts, customExercises] = await Promise.all([
+    const [workouts, customExercises, userTemplates] = await Promise.all([
       storage.getItem<Workout[]>(STORAGE_KEYS.workouts),
       storage.getItem<Exercise[]>(STORAGE_KEYS.exercises),
+      storage.getItem<WorkoutTemplate[]>(STORAGE_KEYS.workoutTemplates),
     ]);
     set({
       workouts: workouts ?? [],
       exercises: [...EXERCISES, ...(customExercises ?? [])],
+      // User templates come first (sorted by newest), then system templates
+      templates: [...(userTemplates ?? []), ...WORKOUT_TEMPLATES],
       loaded: true,
     });
   },
@@ -252,6 +259,43 @@ export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
       map.set(w.date, (map.get(w.date) ?? 0) + 1);
     }
     return [...map.entries()].map(([date, count]) => ({ date, count }));
+  },
+
+  saveAsTemplate: async (workout) => {
+    const template: WorkoutTemplate = {
+      id: uid(),
+      name: workout.name,
+      description: `Guardado el ${format(new Date(), 'd/M/yyyy')}`,
+      category: 'other',
+      exercises: workout.exercises
+        .filter(ex => ex.sets.some(s => s.completed))
+        .map(ex => {
+          const doneSets = ex.sets.filter(s => s.completed);
+          const repValues = doneSets.map(s => s.reps ?? 8).filter(Boolean);
+          return {
+            exerciseId:   ex.exerciseId,
+            sets:         doneSets.length || 3,
+            reps:         repValues.length > 0 ? `${Math.min(...repValues)}-${Math.max(...repValues)}` : '8-12',
+            restSeconds:  ex.restSeconds ?? 90,
+            notes:        ex.notes || undefined,
+          };
+        }),
+      estimatedMinutes: workout.durationMinutes ?? 60,
+      difficulty: 'intermediate',
+      isCustom: true,
+    };
+
+    const existing = get().templates.filter(t => t.isCustom);
+    const updated  = [template, ...existing];
+    await storage.setItem(STORAGE_KEYS.workoutTemplates, updated);
+    set(s => ({ templates: [template, ...s.templates] }));
+    return template;
+  },
+
+  deleteUserTemplate: async (id) => {
+    const remaining = get().templates.filter(t => t.isCustom && t.id !== id);
+    await storage.setItem(STORAGE_KEYS.workoutTemplates, remaining);
+    set(s => ({ templates: s.templates.filter(t => t.id !== id) }));
   },
 }));
 

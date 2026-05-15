@@ -40,6 +40,9 @@ interface NutritionState {
     photoUri?: string;
   }) => Promise<void>;
 
+  // History re-log
+  logMealFromHistory: (meal: Meal) => Promise<void>;
+
   // Targets
   setTargets: (t: NutritionTargets) => Promise<void>;
 
@@ -178,6 +181,19 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
     const bodyWeight = get().bodyWeight.filter(b => b.date !== date);
     set({ bodyWeight });
     await storage.setItem(STORAGE_KEYS.bodyWeight, bodyWeight);
+  },
+
+  logMealFromHistory: async (originalMeal) => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const newMeal: Meal = {
+      ...originalMeal,
+      id:      uid(),
+      date:    today,
+      entries: originalMeal.entries.map(e => ({ ...e, id: uid(), addedAt: new Date().toISOString() })),
+    };
+    const updated = [...get().meals, newMeal];
+    await storage.setItem(STORAGE_KEYS.meals, updated);
+    set({ meals: updated });
   },
 
   getMealsForDate: (date) => get().meals.filter(m => m.date === date),

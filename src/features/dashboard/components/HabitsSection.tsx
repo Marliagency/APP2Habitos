@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { Flame, Trophy } from 'lucide-react';
 import clsx from 'clsx';
+import { fmt } from '../../../shared/utils/fmt';
 import { ChartCard } from './ChartCard';
 import type { Habit } from '../../habits/types';
 import type { HabitStats } from '../../habits/types';
@@ -49,7 +50,7 @@ export function HabitsSection({ habits, weekdayCompletion, streakLeaderboard, ge
               />
               <Tooltip
                 contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 8, fontSize: 11 }}
-                formatter={(v: number) => [`${v}%`, 'Tasa']}
+                formatter={(v: number) => [fmt(v, { integer: true, unit: '%' }), 'Tasa']}
               />
             </RadarChart>
           </ResponsiveContainer>
@@ -95,28 +96,31 @@ export function HabitsSection({ habits, weekdayCompletion, streakLeaderboard, ge
       {habitsWithStats.length > 0 && (
         <ChartCard title="Tasa de completado (30d)" subtitle="Por hábito activo">
           <div className="space-y-2 mt-1">
-            {habitsWithStats.slice(0, 8).map(({ habit, stats }) => (
-              <div key={habit.id} className="flex items-center gap-2.5">
-                <span className="text-base leading-none w-5 shrink-0">{habit.emoji}</span>
-                <p className="text-xs text-[var(--text-secondary)] w-28 shrink-0 truncate">{habit.name}</p>
-                <div className="flex-1 h-2 bg-[var(--bg-base)] rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${stats!.completionRate30d}%`,
-                      backgroundColor: habit.color || 'var(--habit-color)',
-                    }}
-                  />
+            {habitsWithStats.slice(0, 8).map(({ habit, stats }) => {
+              const rate = stats!.completionRate30d * 100;
+              return (
+                <div key={habit.id} className="flex items-center gap-2.5">
+                  <span className="text-base leading-none w-5 shrink-0">{habit.emoji}</span>
+                  <p className="text-xs text-[var(--text-secondary)] w-28 shrink-0 truncate">{habit.name}</p>
+                  <div className="flex-1 h-2 bg-[var(--bg-base)] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, rate)}%`,
+                        backgroundColor: habit.color || 'var(--habit-color)',
+                      }}
+                    />
+                  </div>
+                  <span className={clsx(
+                    'text-xs font-medium w-8 text-right shrink-0',
+                    rate >= 70 ? 'text-[var(--success)]' :
+                    rate >= 40 ? 'text-[var(--warning)]' : 'text-[var(--danger)]',
+                  )}>
+                    {fmt(rate, { integer: true })}%
+                  </span>
                 </div>
-                <span className={clsx(
-                  'text-xs font-medium w-8 text-right shrink-0',
-                  stats!.completionRate30d >= 70 ? 'text-[var(--success)]' :
-                  stats!.completionRate30d >= 40 ? 'text-[var(--warning)]' : 'text-[var(--danger)]',
-                )}>
-                  {stats!.completionRate30d}%
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ChartCard>
       )}

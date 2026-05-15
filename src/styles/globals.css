@@ -154,6 +154,8 @@
   border-radius: var(--r-xl);
   padding: 16px;
   box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  contain: layout;
 }
 
 .metric-card-header {
@@ -301,4 +303,12 @@
   .border-default   { border-color: var(--border-default); }
   .safe-top         { padding-top: var(--safe-top); }
   .safe-bottom      { padding-bottom: var(--safe-bottom); }
+}
+
+/* Recharts containment */
+.recharts-wrapper {
+  max-width: 100% !important;
+}
+.recharts-surface {
+  overflow: visible;
 }
