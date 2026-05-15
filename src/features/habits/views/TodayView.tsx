@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Sun, Moon, Sunset, CheckCircle2, Flame, CheckSquare, Smile } from 'lucide-react';
+import { Sun, Moon, Sunset, CheckCircle2, Flame, CheckSquare, Smile, Utensils } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useHabits } from '../hooks/useHabits';
@@ -8,6 +8,9 @@ import { HabitCard } from '../components/HabitCard';
 import { EmptyState, ProgressBar, Skeleton } from '../../../shared/components/ui';
 import { useJournalStore } from '../../journal/store/journalStore';
 import { MOOD_EMOJI, MOOD_LABELS } from '../../journal/types';
+import { useNutritionStore } from '../../nutrition/store/nutritionStore';
+import { useNutritionTargets } from '../../nutrition/hooks/useNutritionTargets';
+import { fmt } from '../../../shared/utils/fmt';
 
 function getGreeting(): { text: string; Icon: typeof Sun } {
   const h = new Date().getHours();
@@ -27,6 +30,11 @@ export default function TodayView() {
   const { getMoodByDate } = useJournalStore();
   const todayMood = getMoodByDate(today);
   const { text: greeting, Icon: GreetingIcon } = getGreeting();
+
+  const { getTotalsForDate } = useNutritionStore();
+  const targets = useNutritionTargets();
+  const nutritionTotals = getTotalsForDate(today);
+  const hasNutritionData = nutritionTotals.calories > 0;
   const progress = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
   const allDone  = totalToday > 0 && completedToday === totalToday;
 
@@ -107,6 +115,50 @@ export default function TodayView() {
           {todayMood ? 'Ver diario' : 'Registrar'}
         </button>
       </motion.div>
+
+      {/* Nutrition quick card */}
+      {(hasNutritionData || targets) && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-[var(--r-lg)] p-3 flex items-center gap-3"
+        >
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: 'var(--c-nutrition)18' }}
+          >
+            <Utensils size={15} style={{ color: 'var(--c-nutrition)' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-[var(--text-primary)]">Nutrición de hoy</p>
+            <p className="text-[10px] text-[var(--text-tertiary)]">
+              {hasNutritionData
+                ? `${fmt(nutritionTotals.calories, { integer: true })} kcal${targets ? ` / ${fmt(targets.calories, { integer: true })}` : ''}`
+                : 'Sin registros aún'
+              }
+            </p>
+            {hasNutritionData && targets && (
+              <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-hover)' }}>
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{
+                    width: `${Math.min(100, (nutritionTotals.calories / targets.calories) * 100)}%`,
+                    background: 'var(--c-nutrition)',
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          <button
+            onClick={() => navigate('/nutrition')}
+            className="shrink-0 px-2.5 py-1 text-[10px] font-medium rounded-[var(--r-md)] hover:opacity-80 transition-opacity"
+            style={{ background: 'var(--c-nutrition)18', color: 'var(--c-nutrition)' }}
+          >
+            {hasNutritionData ? 'Ver' : 'Añadir'}
+          </button>
+        </motion.div>
+      )}
 
       {/* Habit list */}
       {totalToday === 0 ? (

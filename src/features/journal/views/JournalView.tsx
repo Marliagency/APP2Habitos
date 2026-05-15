@@ -362,7 +362,7 @@ export default function JournalView() {
             <>
               <div className="flex items-center gap-1.5">
                 <TrendingUp size={14} className="text-[var(--accent)]" />
-                <span className="text-xs font-semibold text-[var(--text-primary)]">{Math.round(avgMood * 10) / 10}</span>
+                <span className="text-xs font-semibold text-[var(--text-primary)]">{fmt(avgMood, { decimals: 1 })}</span>
                 <span className="text-xs text-[var(--text-tertiary)]">ánimo 30d</span>
               </div>
               <div className="w-px h-4 bg-[var(--border-subtle)]" />

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Archive, Settings2, Flame, BarChart2 } from 'lucide-react';
+import { Plus, Archive, Settings2, Flame, BarChart2, Sparkles, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
@@ -8,6 +8,7 @@ import {
 } from '../../../shared/components/ui';
 import { useHabits } from '../hooks/useHabits';
 import { useHabitsStore } from '../store/habitsStore';
+import { useHabitGoalSync } from '../hooks/useHabitGoalSync';
 import { HabitCard } from '../components/HabitCard';
 import { HabitForm } from '../components/HabitForm';
 import { HabitHeatmap } from '../components/HabitHeatmap';
@@ -34,6 +35,9 @@ export default function HabitsView() {
   const [editHabit, setEditHabit]     = useState<Habit | null>(null);
   const [detailHabit, setDetailHabit] = useState<Habit | null>(null);
   const [saving, setSaving]           = useState(false);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState(false);
+
+  const { hasSuggestions, suggestions } = useHabitGoalSync();
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -88,6 +92,49 @@ export default function HabitsView() {
           </Button>
         </div>
       </div>
+
+      {/* Goal suggestion banner */}
+      {hasSuggestions && !dismissedSuggestions && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative rounded-[var(--r-xl)] border border-[var(--accent)]/20 p-3"
+          style={{ background: 'var(--accent)0d' }}
+        >
+          <button
+            onClick={() => setDismissedSuggestions(true)}
+            className="absolute top-2 right-2 p-1 rounded-full text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+          >
+            <X size={12} />
+          </button>
+          <div className="flex items-start gap-2 pr-5">
+            <Sparkles size={14} className="mt-0.5 shrink-0" style={{ color: 'var(--accent)' }} />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-[var(--text-primary)] mb-1">
+                Hábitos recomendados por tu objetivo
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {suggestions.slice(0, 5).map((s, i) => (
+                  <span
+                    key={i}
+                    className="text-[10px] px-2 py-0.5 rounded-full border border-[var(--accent)]/30"
+                    style={{ color: 'var(--accent)', background: 'var(--accent)15' }}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowPresets(true)}
+                className="mt-2 text-[10px] font-medium underline underline-offset-2"
+                style={{ color: 'var(--accent)' }}
+              >
+                Ver plantillas de hábitos →
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Tabs */}
       <Tabs value={tab} onChange={setTab}>

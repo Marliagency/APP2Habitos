@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Key, Eye, EyeOff, CheckCircle2, Moon, Bell, Smartphone, Trash2, Download, Info } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Key, Eye, EyeOff, CheckCircle2, Moon, Bell, Smartphone, Trash2, Download, Upload, Info } from 'lucide-react';
 import { Toggle, Button } from '../../../shared/components/ui';
 import { useAppSettings } from '../../../shared/hooks/useAppSettings';
 import { useToast } from '../../../shared/components/ui';
@@ -78,7 +78,9 @@ export default function SettingsView() {
   const { settings, updateSettings } = useAppSettings();
   const { toast }                    = useToast();
   const [exportLoading, setExportLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
   const [clearConfirm, setClearConfirm]   = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     setExportLoading(true);
@@ -101,6 +103,28 @@ export default function SettingsView() {
       toast('Error al exportar', 'error');
     } finally {
       setExportLoading(false);
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportLoading(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text) as Record<string, unknown>;
+      const validKeys = new Set<string>(Object.values(STORAGE_KEYS));
+      for (const [key, val] of Object.entries(data)) {
+        if (validKeys.has(key)) {
+          await storage.setItem(key, val);
+        }
+      }
+      toast('Datos importados. Recarga la app para ver los cambios.', 'success');
+    } catch {
+      toast('Error al importar. Verifica que el archivo sea válido.', 'error');
+    } finally {
+      setImportLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -213,6 +237,26 @@ export default function SettingsView() {
             </div>
           </button>
           <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importLoading}
+            className="section-row section-row-pressable w-full text-left"
+          >
+            <div className="section-row-icon" style={{ background: '#34c75920', color: '#34c759' }}>
+              <Upload size={15} />
+            </div>
+            <div className="section-row-content">
+              <span className="section-row-label">{importLoading ? 'Importando…' : 'Importar datos'}</span>
+              <span className="section-row-value">JSON</span>
+            </div>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
             onClick={handleClearAll}
             className="section-row section-row-pressable w-full text-left"
           >
@@ -226,7 +270,7 @@ export default function SettingsView() {
             </div>
           </button>
         </div>
-        <p className="section-footer">Exporta un JSON con todos tus hábitos, entrenamientos, nutrición y diario.</p>
+        <p className="section-footer">Exporta e importa un JSON con todos tus hábitos, entrenamientos, nutrición y diario.</p>
       </div>
 
       {/* About */}
