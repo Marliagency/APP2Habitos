@@ -155,7 +155,12 @@
   padding: 16px;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  contain: layout;
+}
+
+.recharts-chart-wrap {
+  overflow: hidden;
+  margin: 0 -4px;
+  padding: 0 4px;
 }
 
 .metric-card-header {

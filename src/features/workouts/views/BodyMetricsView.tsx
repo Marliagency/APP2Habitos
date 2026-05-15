@@ -117,7 +117,7 @@ export default function BodyMetricsView() {
               <Tooltip content={<AppleTooltip unit="kg" decimals={1} />} />
               {avgWeight && (
                 <ReferenceLine y={avgWeight} stroke={COLOR} strokeDasharray="4 3" strokeWidth={1}
-                  label={{ value: 'Media', position: 'right', fontSize: 10, fill: COLOR }} />
+                  label={{ value: 'Media', position: 'insideTopRight', fontSize: 10, fill: COLOR }} />
               )}
               <Line type="monotone" dataKey="weight" stroke={COLOR} strokeWidth={2.5}
                 dot={{ fill: COLOR, r: 3, strokeWidth: 0 }} name="Peso" />

@@ -140,7 +140,7 @@ export function HabitsMonthlyChart({ habits, entries }: { habits: Habit[]; entri
             formatter={(v: number) => [fmt(v, { integer: true, unit: '%' }), 'Completado']}
           />
           <ReferenceLine y={70} stroke="#34c759" strokeDasharray="4 3" strokeWidth={1}
-            label={{ value: '70%', position: 'right', fontSize: 10, fill: '#34c759' }} />
+            label={{ value: '70%', position: 'insideTopRight', fontSize: 10, fill: '#34c759' }} />
           <Area type="monotone" dataKey="pct" stroke={COLOR} strokeWidth={2} fill="url(#habitGrad)" dot={false} name="Completado" />
         </AreaChart>
       </ResponsiveContainer>

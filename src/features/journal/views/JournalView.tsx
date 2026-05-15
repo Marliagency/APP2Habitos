@@ -84,7 +84,7 @@ function MoodTrendChart({ entries }: { entries: JournalEntry[] }) {
           <Tooltip content={<AppleTooltip unit="/5" decimals={0} />} />
           {avg !== null && (
             <ReferenceLine y={avg} stroke={JOURNAL_COLOR} strokeDasharray="4 3" strokeWidth={1}
-              label={{ value: 'Media', position: 'right', fontSize: 10, fill: JOURNAL_COLOR }} />
+              label={{ value: 'Media', position: 'insideTopRight', fontSize: 10, fill: JOURNAL_COLOR }} />
           )}
           <Area type="monotone" dataKey="mood" stroke={JOURNAL_COLOR} strokeWidth={2}
             fill="url(#moodGrad)" dot={{ fill: JOURNAL_COLOR, r: 3, strokeWidth: 0 }}

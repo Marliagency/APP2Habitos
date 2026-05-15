@@ -65,7 +65,7 @@ export function CaloriesWeekChart({ store }: { store: StoreProps }) {
           <Tooltip content={<AppleTooltip unit="kcal" decimals={0} />} />
           {target && (
             <ReferenceLine y={target} stroke={COLOR} strokeDasharray="4 3" strokeWidth={1}
-              label={{ value: 'Obj', position: 'right', fontSize: 10, fill: COLOR }} />
+              label={{ value: 'Obj', position: 'insideTopRight', fontSize: 10, fill: COLOR }} />
           )}
           <Bar dataKey="calories" radius={[5, 5, 0, 0]} name="Calorías">
             {data.map((d, i) => (
@@ -153,7 +153,7 @@ export function CaloriesMonthChart({ store }: { store: StoreProps }) {
           <Tooltip content={<AppleTooltip unit="kcal" decimals={0} />} />
           {target && (
             <ReferenceLine y={target} stroke={COLOR} strokeDasharray="4 3" strokeWidth={1}
-              label={{ value: 'Obj', position: 'right', fontSize: 10, fill: COLOR }} />
+              label={{ value: 'Obj', position: 'insideTopRight', fontSize: 10, fill: COLOR }} />
           )}
           <Area type="monotone" dataKey="calories" stroke={COLOR} strokeWidth={2} fill="url(#calGrad)" dot={false} name="Calorías" />
         </AreaChart>

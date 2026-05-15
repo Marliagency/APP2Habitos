@@ -1,6 +1,6 @@
 import { useState, lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { Plus, Dumbbell, BarChart2, ChevronRight, Trophy, Calculator, Scale, TrendingUp, AlertTriangle, Trash2 } from 'lucide-react';
+import { Plus, Dumbbell, BarChart2, ChevronRight, Trophy, Calculator, Scale, TrendingUp, AlertTriangle, Trash2, RotateCcw } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
@@ -43,7 +43,7 @@ function WorkoutsHome() {
   const [showPlateCalc, setShowPlateCalc]   = useState(false);
   const [startName, setStartName]           = useState('');
 
-  const { workouts, loaded, activeWorkout, templates, deleteUserTemplate } = store;
+  const { workouts, loaded, activeWorkout, templates, deleteUserTemplate, repeatWorkout } = store;
   const { weeklyTarget, workoutType, hasGoal } = useWorkoutGoal();
 
   const recentWorkouts = [...workouts].reverse().slice(0, 20);
@@ -181,6 +181,14 @@ function WorkoutsHome() {
                         </span>
                       </div>
                     </div>
+                    <button
+                      onClick={() => { repeatWorkout(w); navigate('active'); }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-[var(--accent)]/10 text-[var(--accent)] text-[10px] font-medium rounded-[var(--r-md)] hover:bg-[var(--accent)]/20 transition-colors shrink-0"
+                      title="Repetir este entreno"
+                    >
+                      <RotateCcw size={11} />
+                      Repetir
+                    </button>
                   </div>
                 );
               })}

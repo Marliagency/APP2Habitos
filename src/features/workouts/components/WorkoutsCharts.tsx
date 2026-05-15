@@ -77,7 +77,7 @@ export function WorkoutsVolumeChart({ workouts }: { workouts: Workout[] }) {
           <Tooltip content={<AppleTooltip unit="kg" decimals={0} />} />
           {avg > 0 && (
             <ReferenceLine y={avg} stroke={COLOR} strokeDasharray="4 3" strokeWidth={1}
-              label={{ value: 'Media', position: 'right', fontSize: 10, fill: COLOR }} />
+              label={{ value: 'Media', position: 'insideTopRight', fontSize: 10, fill: COLOR }} />
           )}
           <Area type="monotone" dataKey="volume" stroke={COLOR} strokeWidth={2} fill="url(#volGrad)" dot={false} name="Volumen" />
         </AreaChart>
@@ -120,7 +120,7 @@ export function WorkoutsFrequencyChart({ workouts, weeklyTarget }: { workouts: W
           <Tooltip content={<AppleTooltip unit=" sesiones" decimals={0} />} />
           {weeklyTarget !== undefined && weeklyTarget > 0 && (
             <ReferenceLine y={weeklyTarget} stroke="var(--accent)" strokeDasharray="4 3" strokeWidth={1.5}
-              label={{ value: `🎯 ${weeklyTarget}`, position: 'right', fontSize: 10, fill: 'var(--accent)' }} />
+              label={{ value: `🎯 ${weeklyTarget}`, position: 'insideTopRight', fontSize: 10, fill: 'var(--accent)' }} />
           )}
           <Bar dataKey="count" radius={[5, 5, 0, 0]} name="Sesiones">
             {data.map((d, i) => (

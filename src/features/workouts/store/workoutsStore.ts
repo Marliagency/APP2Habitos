@@ -44,6 +44,9 @@ interface WorkoutsState {
   // User templates
   saveAsTemplate: (workout: Workout) => Promise<WorkoutTemplate>;
   deleteUserTemplate: (id: string) => Promise<void>;
+
+  // Repeat a past workout
+  repeatWorkout: (workout: Workout) => void;
 }
 
 export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
@@ -296,6 +299,40 @@ export const useWorkoutsStore = create<WorkoutsState>((set, get) => ({
     const remaining = get().templates.filter(t => t.isCustom && t.id !== id);
     await storage.setItem(STORAGE_KEYS.workoutTemplates, remaining);
     set(s => ({ templates: s.templates.filter(t => t.id !== id) }));
+  },
+
+  repeatWorkout: (workout) => {
+    const exercises: WorkoutExercise[] = workout.exercises.map(ex => ({
+      id:             uid(),
+      exerciseId:     ex.exerciseId,
+      restSeconds:    ex.restSeconds,
+      supersetWithId: null,
+      notes:          ex.notes,
+      sets: ex.sets
+        .filter(s => s.completed)
+        .map(s => ({
+          ...defaultSet(),
+          weight: s.weight,
+          reps:   s.reps,
+          type:   s.type,
+        }))
+        .concat(ex.sets.filter(s => s.completed).length === 0 ? [defaultSet()] : []),
+    }));
+    const newWorkout: Workout = {
+      id:              uid(),
+      name:            workout.name,
+      date:            format(new Date(), 'yyyy-MM-dd'),
+      startedAt:       new Date().toISOString(),
+      finishedAt:      null,
+      durationMinutes: null,
+      exercises,
+      templateId:      null,
+      bodyWeight:      null,
+      energy:          null,
+      totalVolume:     0,
+      prs:             [],
+    };
+    set({ activeWorkout: newWorkout });
   },
 }));
 
