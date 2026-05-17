@@ -14,12 +14,12 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => { if (!loaded) loadFromStorage(); }, [loaded, loadFromStorage]);
 
   return (
-    <div className="flex h-screen h-[100dvh] bg-[var(--bg-void)] overflow-hidden">
+    <div className="flex h-[100dvh] bg-[var(--bg-void)] overflow-hidden">
       <aside className="hidden md:flex w-60 shrink-0">
         <Sidebar />
       </aside>
-      <main className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="min-h-full pb-20 md:pb-0">
+      <main className="app-main-scroll">
+        <div className="pb-20 md:pb-6">
           {children}
         </div>
       </main>

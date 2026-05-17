@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Check, Target } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Target, Info } from 'lucide-react';
 import { useGoalsStore } from '../store/goalsStore';
+import { useUserStore } from '../../user/store/userStore';
 import { inferGoalTargets } from '../utils/goalInference';
 import {
   INTENT_LABELS, INTENT_DESCRIPTIONS, INTENT_EMOJIS,
@@ -50,7 +51,7 @@ function StepLifeIntent({ value, onChange }: { value: LifeIntent | null; onChang
   );
 }
 
-function StepBodyProfile({ value, onChange }: { value: BodyProfile; onChange: (v: BodyProfile) => void }) {
+function StepBodyProfile({ value, onChange, fromProfile }: { value: BodyProfile; onChange: (v: BodyProfile) => void; fromProfile: boolean }) {
   const set = <K extends keyof BodyProfile>(k: K, v: BodyProfile[K]) => onChange({ ...value, [k]: v });
   return (
     <div className="space-y-4">
@@ -58,6 +59,12 @@ function StepBodyProfile({ value, onChange }: { value: BodyProfile; onChange: (v
         <h2 className="text-lg font-semibold text-[var(--text-primary)]">Tu perfil físico</h2>
         <p className="text-sm text-[var(--text-tertiary)] mt-1">Para calcular tus necesidades calóricas precisas.</p>
       </div>
+      {fromProfile && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-[var(--accent-subtle)] rounded-[var(--r-lg)] text-xs text-[var(--accent)]">
+          <Info size={13} className="shrink-0" />
+          Pre-rellenado desde tu perfil — puedes ajustar si ha cambiado algo
+        </div>
+      )}
 
       {/* Sex */}
       <div>
@@ -267,12 +274,24 @@ export default function GoalWizardView() {
   const navigate  = useNavigate();
   const { toast } = useToast();
   const saveGoal  = useGoalsStore(s => s.saveGoal);
+  const userProfile = useUserStore(s => s.profile);
+  const userGetAge  = useUserStore(s => s.getAge);
+
+  // Pre-fill body from userStore — avoids re-asking data the user already entered
+  const profileAge = userGetAge();
+  const profileHasBody = !!(userProfile?.heightCm && userProfile?.weightKg);
 
   const [step,       setStep]       = useState(0);
   const [saving,     setSaving]     = useState(false);
   const [intent,     setIntent]     = useState<LifeIntent | null>(null);
   const [body,       setBody]       = useState<BodyProfile>({
-    age: 30, sex: 'male', heightCm: 175, weightKg: 75, activityLevel: 'moderate',
+    age:           profileAge ?? 30,
+    sex:           (userProfile?.sex === 'male' || userProfile?.sex === 'female' || userProfile?.sex === 'other')
+                     ? userProfile.sex
+                     : 'male',
+    heightCm:      userProfile?.heightCm ?? 175,
+    weightKg:      userProfile?.weightKg ?? 75,
+    activityLevel: userProfile?.activityLevel ?? 'moderate',
   });
   const [time,       setTime]       = useState<TimeBudget>({
     workoutDaysPerWeek: 3, workoutMinutesPerSession: 60, habitMinutesPerDay: 20,
@@ -346,7 +365,7 @@ export default function GoalWizardView() {
             transition={{ duration: 0.2 }}
           >
             {step === 0 && <StepLifeIntent value={intent} onChange={setIntent} />}
-            {step === 1 && <StepBodyProfile value={body} onChange={setBody} />}
+            {step === 1 && <StepBodyProfile value={body} onChange={setBody} fromProfile={profileHasBody} />}
             {step === 2 && <StepTimeBudget value={time} onChange={setTime} />}
             {step === 3 && <StepGoalPriorities value={priorities} onChange={setPriorities} />}
             {step === 4 && intent && <StepRecommendations intent={intent} body={body} time={time} priorities={priorities} />}
