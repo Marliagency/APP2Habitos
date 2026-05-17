@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
+import { useUserStore } from '../../../features/user/store/userStore';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -8,6 +10,8 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   useTheme();
+  const { loaded, loadFromStorage } = useUserStore();
+  useEffect(() => { if (!loaded) loadFromStorage(); }, [loaded, loadFromStorage]);
 
   return (
     <div className="flex h-screen h-[100dvh] bg-[var(--bg-void)] overflow-hidden">

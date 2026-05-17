@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Key, Eye, EyeOff, CheckCircle2, Moon, Bell, Smartphone, Trash2, Download, Upload, Info } from 'lucide-react';
+import {
+  Key, Eye, EyeOff, CheckCircle2, Moon, Bell, Smartphone, Trash2,
+  Download, Upload, Info, User, LogOut, ChevronRight,
+} from 'lucide-react';
 import { Toggle, Button } from '../../../shared/components/ui';
 import { useAppSettings } from '../../../shared/hooks/useAppSettings';
 import { useToast } from '../../../shared/components/ui';
 import { storage, STORAGE_KEYS } from '../../../shared/lib/storage';
+import { useAuthStore } from '../../auth/store/authStore';
+import { useUserStore } from '../../user/store/userStore';
+import { useUserProfile } from '../../user/hooks/useUserProfile';
+import { ACTIVITY_LEVELS, GOALS } from '../../user/types';
+import type { Sex } from '../../user/types';
 
 const AI_CLAUDE_KEY = 'ai_claude_key';
 const AI_OPENAI_KEY = 'ai_openai_key';
@@ -61,6 +69,7 @@ function APIKeyField({ label, storageKey, placeholder }: {
             onClick={() => setVisible(v => !v)}
             aria-label={visible ? 'Ocultar' : 'Mostrar'}
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+            style={{ minHeight: 'unset' }}
           >
             {visible ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
@@ -70,6 +79,174 @@ function APIKeyField({ label, storageKey, placeholder }: {
       {saved && value && (
         <p className="text-[10px] text-[var(--text-tertiary)]">Almacenada: {masked}</p>
       )}
+    </div>
+  );
+}
+
+/* ── Profile editor ────────────────────────────────────────────────────────── */
+function ProfileEditor() {
+  const { toast }          = useToast();
+  const updateProfile      = useUserStore(s => s.updateProfile);
+  const { profile, age, bmr, tdee, initials } = useUserProfile();
+
+  const [name, setName]     = useState(profile?.name ?? '');
+  const [dirty, setDirty]   = useState(false);
+
+  if (!profile) return null;
+
+  const handleSave = async () => {
+    await updateProfile({ name: name.trim() || profile.name });
+    setDirty(false);
+    toast('Perfil actualizado', 'success');
+  };
+
+  const sexLabels: Record<Sex, string> = {
+    male: 'Hombre', female: 'Mujer', other: 'Otro', prefer_not_to_say: 'No especificado',
+  };
+
+  return (
+    <div className="section-group">
+      <p className="section-header">Mi perfil</p>
+      <div className="section-body">
+        {/* Avatar + name row */}
+        <div className="section-row gap-3">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0"
+            style={{ background: 'var(--qyro-grad)' }}
+          >
+            {initials || <User size={18} />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <input
+              type="text"
+              value={name}
+              onChange={e => { setName(e.target.value); setDirty(true); }}
+              className="w-full text-sm font-semibold text-[var(--text-primary)] bg-transparent border-none outline-none focus:ring-0"
+              placeholder="Tu nombre"
+            />
+            <p className="text-xs text-[var(--text-tertiary)]">{profile.email}</p>
+          </div>
+          {dirty && (
+            <button
+              onClick={handleSave}
+              className="text-xs text-[var(--accent)] font-semibold touch-compact"
+              style={{ minHeight: 'unset' }}
+            >
+              Guardar
+            </button>
+          )}
+        </div>
+
+        {/* Physical stats */}
+        {profile.sex && (
+          <div className="section-row">
+            <div className="section-row-content">
+              <span className="section-row-label">Sexo biológico</span>
+              <span className="section-row-value">{sexLabels[profile.sex]}</span>
+            </div>
+          </div>
+        )}
+        {age !== null && (
+          <div className="section-row">
+            <div className="section-row-content">
+              <span className="section-row-label">Edad</span>
+              <span className="section-row-value">{age} años</span>
+            </div>
+          </div>
+        )}
+        {profile.heightCm && (
+          <div className="section-row">
+            <div className="section-row-content">
+              <span className="section-row-label">Altura</span>
+              <span className="section-row-value">{profile.heightCm} cm</span>
+            </div>
+          </div>
+        )}
+        {profile.weightKg && (
+          <div className="section-row">
+            <div className="section-row-content">
+              <span className="section-row-label">Peso</span>
+              <span className="section-row-value">{profile.weightKg} kg</span>
+            </div>
+          </div>
+        )}
+        {profile.activityLevel && (
+          <div className="section-row">
+            <div className="section-row-content">
+              <span className="section-row-label">Actividad</span>
+              <span className="section-row-value">
+                {ACTIVITY_LEVELS.find(l => l.value === profile.activityLevel)?.label}
+              </span>
+            </div>
+          </div>
+        )}
+        {profile.goal && (
+          <div className="section-row">
+            <div className="section-row-content">
+              <span className="section-row-label">Objetivo</span>
+              <span className="section-row-value">
+                {GOALS.find(g => g.value === profile.goal)?.label}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Computed metabolics */}
+        {(bmr || tdee) && (
+          <div className="px-4 py-3 bg-[var(--accent-subtle)] rounded-b-[var(--r-xl)] space-y-1">
+            <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide">Metabolismo calculado</p>
+            <div className="flex gap-4">
+              {bmr && (
+                <div>
+                  <p className="text-xs text-[var(--text-secondary)]">TMB</p>
+                  <p className="text-base font-bold text-[var(--accent)]">{bmr} <span className="text-xs font-normal">kcal</span></p>
+                </div>
+              )}
+              {tdee && (
+                <div>
+                  <p className="text-xs text-[var(--text-secondary)]">TDEE</p>
+                  <p className="text-base font-bold text-[var(--accent)]">{tdee} <span className="text-xs font-normal">kcal</span></p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Logout row ────────────────────────────────────────────────────────────── */
+function LogoutRow() {
+  const { toast }  = useToast();
+  const logout     = useAuthStore(s => s.logout);
+  const [confirm, setConfirm] = useState(false);
+
+  const handleLogout = async () => {
+    if (!confirm) {
+      setConfirm(true);
+      setTimeout(() => setConfirm(false), 3000);
+      return;
+    }
+    await logout();
+    toast('Sesión cerrada', 'info');
+  };
+
+  return (
+    <div className="section-group">
+      <div className="section-body">
+        <button onClick={handleLogout} className="section-row section-row-pressable w-full text-left">
+          <div className="section-row-icon" style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>
+            <LogOut size={15} />
+          </div>
+          <div className="section-row-content">
+            <span className="section-row-label" style={{ color: confirm ? 'var(--danger)' : undefined }}>
+              {confirm ? '¿Seguro? Pulsa de nuevo' : 'Cerrar sesión'}
+            </span>
+            <ChevronRight size={14} className="text-[var(--text-tertiary)]" />
+          </div>
+        </button>
+      </div>
     </div>
   );
 }
@@ -95,7 +272,7 @@ export default function SettingsView() {
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
       a.href     = url;
-      a.download = `app2habitos_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `qyro_backup_${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
       toast('Datos exportados', 'success');
@@ -143,15 +320,18 @@ export default function SettingsView() {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto pb-24 space-y-6">
-      <h1 className="text-xl font-semibold text-[var(--text-primary)]">Ajustes</h1>
+    <div className="p-4 md:p-6 max-w-2xl mx-auto pb-24 space-y-2">
+      <h1 className="text-xl font-bold text-[var(--text-primary)] mb-4">Ajustes</h1>
+
+      {/* Profile */}
+      <ProfileEditor />
 
       {/* Appearance */}
       <div className="section-group">
         <p className="section-header">Apariencia</p>
         <div className="section-body">
           <div className="section-row">
-            <div className="section-row-icon" style={{ background: '#1c1c1e20', color: '#1c1c1e' }}>
+            <div className="section-row-icon" style={{ background: 'rgba(22,25,48,0.08)', color: 'var(--text-primary)' }}>
               <Moon size={15} />
             </div>
             <div className="section-row-content">
@@ -170,7 +350,7 @@ export default function SettingsView() {
         <p className="section-header">Notificaciones</p>
         <div className="section-body">
           <div className="section-row">
-            <div className="section-row-icon" style={{ background: '#ff3b3020', color: '#ff3b30' }}>
+            <div className="section-row-icon" style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>
               <Bell size={15} />
             </div>
             <div className="section-row-content">
@@ -182,7 +362,7 @@ export default function SettingsView() {
             </div>
           </div>
           <div className="section-row">
-            <div className="section-row-icon" style={{ background: '#34c75920', color: '#34c759' }}>
+            <div className="section-row-icon" style={{ background: 'var(--success-subtle)', color: 'var(--success)' }}>
               <Smartphone size={15} />
             </div>
             <div className="section-row-content">
@@ -206,7 +386,7 @@ export default function SettingsView() {
             storageKey={AI_CLAUDE_KEY}
             placeholder="sk-ant-api03-…"
           />
-          <div style={{ height: '0.5px', background: 'var(--border-subtle)', margin: '0 16px' }} />
+          <div style={{ height: '1px', background: 'var(--border-subtle)', margin: '0 16px' }} />
           <APIKeyField
             label="OpenAI"
             storageKey={AI_OPENAI_KEY}
@@ -215,7 +395,6 @@ export default function SettingsView() {
         </div>
         <p className="section-footer">
           Las claves se almacenan solo en este dispositivo y nunca se envían a servidores externos.
-          Necesitas al menos una para el Asistente IA, análisis de fotos y el Diario con IA.
         </p>
       </div>
 
@@ -228,7 +407,7 @@ export default function SettingsView() {
             disabled={exportLoading}
             className="section-row section-row-pressable w-full text-left"
           >
-            <div className="section-row-icon" style={{ background: '#007aff20', color: '#007aff' }}>
+            <div className="section-row-icon" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
               <Download size={15} />
             </div>
             <div className="section-row-content">
@@ -241,7 +420,7 @@ export default function SettingsView() {
             disabled={importLoading}
             className="section-row section-row-pressable w-full text-left"
           >
-            <div className="section-row-icon" style={{ background: '#34c75920', color: '#34c759' }}>
+            <div className="section-row-icon" style={{ background: 'var(--success-subtle)', color: 'var(--success)' }}>
               <Upload size={15} />
             </div>
             <div className="section-row-content">
@@ -260,7 +439,7 @@ export default function SettingsView() {
             onClick={handleClearAll}
             className="section-row section-row-pressable w-full text-left"
           >
-            <div className="section-row-icon" style={{ background: '#ff3b3020', color: '#ff3b30' }}>
+            <div className="section-row-icon" style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>
               <Trash2 size={15} />
             </div>
             <div className="section-row-content">
@@ -270,7 +449,7 @@ export default function SettingsView() {
             </div>
           </button>
         </div>
-        <p className="section-footer">Exporta e importa un JSON con todos tus hábitos, entrenamientos, nutrición y diario.</p>
+        <p className="section-footer">Exporta e importa un JSON con todos tus datos de QYRO.</p>
       </div>
 
       {/* About */}
@@ -278,17 +457,20 @@ export default function SettingsView() {
         <p className="section-header">Acerca de</p>
         <div className="section-body">
           <div className="section-row">
-            <div className="section-row-icon" style={{ background: '#5856d620', color: '#5856d6' }}>
+            <div className="section-row-icon" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
               <Info size={15} />
             </div>
             <div className="section-row-content">
-              <span className="section-row-label">APP2Habitos</span>
+              <span className="section-row-label">QYRO</span>
               <span className="section-row-value">v1.0.0</span>
             </div>
           </div>
         </div>
         <p className="section-footer">Tu sistema operativo personal — hábitos, entrenos, nutrición, diario y objetivos.</p>
       </div>
+
+      {/* Logout */}
+      <LogoutRow />
     </div>
   );
 }

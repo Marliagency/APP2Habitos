@@ -20,6 +20,8 @@ import { Skeleton }          from '../../../shared/components/ui';
 import { MOOD_EMOJI, MOOD_COLOR, MOOD_LABELS } from '../../journal/types';
 import type { Mood } from '../../journal/types';
 import { fmt } from '../../../shared/utils/fmt';
+import { useUserProfile } from '../../user/hooks/useUserProfile';
+import { ProfileCompletionBanner } from '../../user/components/ProfileCompletionBanner';
 
 function DashboardSkeleton() {
   return (
@@ -224,6 +226,7 @@ function AchievementsTable() {
 
 export default function DashboardView() {
   const navigate = useNavigate();
+  const { profile, initials } = useUserProfile();
 
   const habitsStore    = useHabitsStore();
   const workoutsStore  = useWorkoutsStore();
@@ -272,10 +275,25 @@ export default function DashboardView() {
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5 pb-24">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">{greeting}</h1>
-        <p className="text-xs text-[var(--text-tertiary)] mt-0.5 capitalize">{dateStr}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-[var(--text-primary)]">
+            {greeting}{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}
+          </h1>
+          <p className="text-xs text-[var(--text-tertiary)] mt-0.5 capitalize">{dateStr}</p>
+        </div>
+        {/* Avatar */}
+        <button
+          onClick={() => navigate('/settings')}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 touch-compact"
+          style={{ background: 'var(--qyro-grad)', minHeight: 'unset' }}
+        >
+          {initials || '?'}
+        </button>
       </div>
+
+      {/* Profile completion nudge */}
+      <ProfileCompletionBanner onComplete={() => navigate('/settings')} />
 
       {/* KPI Band */}
       <KPIBand
@@ -349,7 +367,7 @@ export default function DashboardView() {
             rings={[
               {
                 value: activeHabits.length > 0 ? Math.round((completedToday / activeHabits.length) * 100) : 0,
-                color: '#007aff',
+                color: 'var(--c-habits)',
                 label: 'Hábitos',
                 sublabel: `${completedToday}/${activeHabits.length} completados`,
               },
@@ -358,7 +376,7 @@ export default function DashboardView() {
                   const target = goal?.derived.workoutDaysPerWeek ?? 3;
                   return Math.min(100, Math.round((workoutsThisWeek / target) * 100));
                 })(),
-                color: '#ff3b30',
+                color: 'var(--c-workouts)',
                 label: 'Entrenos',
                 sublabel: `${workoutsThisWeek} sesiones esta semana`,
               },
@@ -366,7 +384,7 @@ export default function DashboardView() {
                 value: data.caloriesToday !== null && data.calorieTarget !== null
                   ? Math.min(100, Math.round((data.caloriesToday / data.calorieTarget) * 100))
                   : 0,
-                color: '#34c759',
+                color: 'var(--c-nutrition)',
                 label: 'Nutrición',
                 sublabel: data.caloriesToday !== null ? `${data.caloriesToday} kcal` : 'Sin datos',
               },

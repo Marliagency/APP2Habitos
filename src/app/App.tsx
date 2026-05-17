@@ -81,8 +81,17 @@ function AuthGate() {
     );
   }
 
+  // Session exists but profile hasn't loaded yet (e.g. right after register)
+  if (!profile) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[var(--bg-void)]">
+        <div className="w-7 h-7 border-2 border-[var(--border-default)] border-t-[var(--accent)] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   // Logged in but onboarding not complete
-  if (profile && !profile.onboardingCompleted) {
+  if (!profile.onboardingCompleted) {
     return <OnboardingView onComplete={() => loadUser()} />;
   }
 
