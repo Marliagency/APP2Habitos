@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, Flame, MoreHorizontal, SkipForward, Minus, Plus } from 'lucide-react';
+import { Flame, MoreHorizontal, SkipForward, Minus, Plus } from 'lucide-react';
 import clsx from 'clsx';
 import type { Habit, HabitEntry, HabitStats } from '../types';
-import { Badge } from '../../../shared/components/ui';
+import { Badge, AnimatedCheck, CompletionBurst, useCompletionBurst } from '../../../shared/components/ui';
 
 interface HabitCardProps {
   habit: Habit;
@@ -22,6 +22,7 @@ export function HabitCard({
   onIncrement, onDecrement, onClick,
 }: HabitCardProps) {
   const [showActions, setShowActions] = useState(false);
+  const { bursting, trigger } = useCompletionBurst();
 
   const isDone = !!entry && !entry.skipped && entry.count > 0;
   const isSkipped = !!entry?.skipped;
@@ -72,31 +73,18 @@ export function HabitCard({
           </button>
         </div>
       ) : (
-        <button
-          onClick={isDone ? onUnmark : onComplete}
-          aria-label={isDone ? 'Desmarcar hábito' : 'Completar hábito'}
-          className={clsx(
-            'w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0',
-            'transition-all duration-200 active:scale-90',
-            isDone
-              ? 'border-transparent text-white'
-              : 'border-[var(--border-strong)] text-transparent hover:border-[var(--text-secondary)]',
-          )}
-          style={isDone ? { backgroundColor: habit.color } : undefined}
-        >
-          <AnimatePresence>
-            {isDone && (
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-              >
-                <Check size={14} strokeWidth={3} />
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </button>
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <AnimatedCheck
+            checked={isDone}
+            onChange={(checked) => {
+              if (checked) { trigger(); onComplete(); }
+              else onUnmark();
+            }}
+            color={habit.color}
+            size={28}
+          />
+          <CompletionBurst active={bursting} color={habit.color} />
+        </div>
       )}
 
       {/* Info */}

@@ -12,3 +12,6 @@ export { Toggle } from './Toggle';
 export { Modal } from './Modal';
 export { ToastProvider, useToast } from './Toast';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
+export { AnimatedCheck } from './AnimatedCheck';
+export { AnimatedNumber } from './AnimatedNumber';
+export { CompletionBurst, useCompletionBurst } from './CompletionBurst';

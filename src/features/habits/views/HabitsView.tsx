@@ -18,6 +18,7 @@ import {
   HabitsWeeklyChart, HabitsMonthlyChart,
   HabitBreakdownChart, HabitsWeekdayRadar,
 } from '../components/HabitsCharts';
+import { BreakHabitsView } from './BreakHabitsView';
 import type { Habit, HabitEntry, HabitStats } from '../types';
 
 export default function HabitsView() {
@@ -140,6 +141,7 @@ export default function HabitsView() {
       <Tabs value={tab} onChange={setTab}>
         <TabsList>
           <TabsTrigger value="all">Hábitos</TabsTrigger>
+          <TabsTrigger value="break">Romper</TabsTrigger>
           <TabsTrigger value="week">Semana</TabsTrigger>
           <TabsTrigger value="month">Mes</TabsTrigger>
           <TabsTrigger value="stats">Stats</TabsTrigger>
@@ -187,6 +189,13 @@ export default function HabitsView() {
               )}
             </div>
           )}
+        </TabsContent>
+
+        {/* ── Tab: romper hábitos ── */}
+        <TabsContent value="break">
+          <div className="mt-3">
+            <BreakHabitsView />
+          </div>
         </TabsContent>
 
         {/* ── Tab: gráficos semanales ── */}
